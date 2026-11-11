@@ -108,7 +108,7 @@ assets:
         bindings: {}
     tiles: []
     extends: {}
-    lastmod: 1794255405542
+    lastmod: 1794422882653
     events: []
     behaviors: []
     extendTypes: ''
@@ -468,41 +468,60 @@ assets:
 
           const zumbi = place.meet(this, 'Zumbi');
 
-          if (zumbi && templates.valid(zumbi)) {
-
-              // Aplica dano ao zumbi
+          if (
+              zumbi &&
+              templates.valid(zumbi) &&
+              !zumbi.kill &&
+              zumbi.vida > 0
+          ) {
+              // Aplica dano
               zumbi.vida -= this.dano;
 
               console.log(
-                  'Zumbi atingido! Vida restante:',
+                  'Zumbi atingido! Vida:',
                   zumbi.vida
               );
 
-              // Verifica se o zumbi morreu
+              /* ===== MORTE DO ZUMBI ===== */
+
               if (zumbi.vida <= 0) {
 
-                  // Adiciona pontos ao jogador
-                  const jogadores = templates.list['Jogador'];
+                  // Bloqueia novas mortes
+                  zumbi.kill = true;
 
-                  if (jogadores && jogadores.length > 0) {
-                      const jogador = jogadores[0];
+                  // Adiciona pontuação ao jogador
+                  const jogadores =
+                      templates.list['Jogador'] || [];
 
-                      if (templates.valid(jogador)) {
-                          jogador.pontos +=
-                              zumbi.pontosAoMorrer;
+                  const jogador = jogadores.find(
+                      j => templates.valid(j)
+                  );
 
-                          console.log(
-                              'Pontuação:',
-                              jogador.pontos
-                          );
-                      }
+                  if (jogador) {
+                      jogador.pontos +=
+                          zumbi.pontosAoMorrer;
                   }
 
-                  // Elimina o zumbi
-                  zumbi.kill = true;
+                  /* ===== DROP DE KIT MÉDICO ===== */
+
+                  // 7% de chance
+                  const chance = Math.random();
+
+                  if (chance < 0.07) {
+
+                      templates.copy(
+                          'KitMedico',
+                          zumbi.x,
+                          zumbi.y
+                      );
+
+                      console.log(
+                          'Kit médico apareceu!'
+                      );
+                  }
               }
 
-              // Destrói o projétil após o impacto
+              // Remove a bala depois do impacto
               this.kill = true;
 
           } else if (
@@ -511,7 +530,7 @@ assets:
               this.y < -40 ||
               this.y > 760
           ) {
-              // Remove projéteis fora da arena
+              // Remove tiros fora da arena
               this.kill = true;
           }
         arguments: {}
@@ -525,7 +544,7 @@ assets:
     extends:
       cgroup: ''
       'editor:myCollidingCGroups': []
-    lastmod: 1794251705678
+    lastmod: 1794422540771
     uid: bThjTDTzGtRMcm
     behaviors: []
     extendTypes: ''
@@ -804,6 +823,81 @@ assets:
     extendTypes: ''
     defaultText: ''
     textStyle: -1
+  - type: template
+    baseClass: AnimatedSprite
+    name: KitMedico
+    depth: 0
+    texture: whJ4Nbdbzc5Pm5
+    playAnimationOnStart: false
+    loopAnimation: true
+    animationFPS: 30
+    visible: true
+    events:
+      - eventKey: OnStep
+        lib: core
+        code: |
+
+          if (this.coletado) {
+              return;
+          }
+
+          // Verifica colisão com o jogador
+          const jogador = place.meet(this, 'Jogador');
+
+          if (!jogador || !templates.valid(jogador)) {
+              return;
+          }
+
+          // Não permite coleta após o Game Over
+          if (jogador.vida <= 0) {
+              return;
+          }
+
+          // Só coleta se o jogador precisar de cura
+          if (jogador.vida >= jogador.vidaMaxima) {
+              return;
+          }
+
+          // Calcula a vida recuperada
+          const vidaAnterior = jogador.vida;
+
+          jogador.vida = Math.min(
+              jogador.vida + this.cura,
+              jogador.vidaMaxima
+          );
+
+          // Impede coleta duplicada
+          this.coletado = true;
+
+          console.log(
+              'KIT MÉDICO COLETADO!',
+              'Vida anterior:', vidaAnterior,
+              'Vida atual:', jogador.vida
+          );
+
+          // Remove o kit do cenário
+          this.kill = true;
+        arguments: {}
+      - eventKey: OnCreate
+        code: |
+
+          this.cura = 20;
+
+          // Impede que o kit seja coletado duas vezes
+          this.coletado = false;
+
+          // Kit permanece parado no chão
+          this.hspeed = 0;
+          this.vspeed = 0;
+        arguments: {}
+        lib: core
+    extends:
+      cgroup: ''
+      'editor:myCollidingCGroups': []
+    lastmod: 1794422540772
+    uid: w5GfBKFnqBKKqB
+    behaviors: []
+    extendTypes: ''
 globalVars: []
 settings:
   authoring:
