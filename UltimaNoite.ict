@@ -36,6 +36,22 @@ actions:
   - name: Atirar
     methods:
       - code: pointer.Primary
+  - name: Escolha1
+    methods:
+      - code: keyboard.Digit1
+      - code: keyboard.Numpad1
+  - name: Escolha2
+    methods:
+      - code: keyboard.Digit2
+      - code: keyboard.Numpad2
+  - name: Escolha3
+    methods:
+      - code: keyboard.Digit3
+      - code: keyboard.Numpad3
+  - name: PularMelhoria
+    methods:
+      - code: keyboard.Digit0
+      - code: keyboard.Numpad0
 scripts: []
 assets:
   - type: room
@@ -108,7 +124,7 @@ assets:
         bindings: {}
     tiles: []
     extends: {}
-    lastmod: 1794422882653
+    lastmod: 1794427161842
     events: []
     behaviors: []
     extendTypes: ''
@@ -323,6 +339,7 @@ assets:
               );
 
               tiro.dano = this.dano;
+              tiro.speed = this.velocidadeProjetil;
               tiro.direction = angulo;
               tiro.angle = angulo;
           }
@@ -330,18 +347,20 @@ assets:
         arguments: {}
       - eventKey: OnCreate
         code: |-
+          //Atributos Iniciais
           this.vida = 100;
           this.vidaMaxima = 100;
           this.velocidade = 240;
           this.dano = 20;
           this.moedas = 0;
           this.pontos = 0;
+          this.velocidadeProjetil = 500;
         arguments: {}
         lib: core
     extends:
       cgroup: ''
       'editor:myCollidingCGroups': []
-    lastmod: 1794253899013
+    lastmod: 1794423860845
     uid: 489p9JKMb6NGWT
     behaviors: []
     extendTypes: ''
@@ -359,89 +378,176 @@ assets:
         lib: core
         code: |
 
-          const jogadores = templates.list['Jogador'];
+          /* =========================================
+             ULTIMA NOITE - ZUMBI
+             EVENTO: NO INICIO DO QUADRO
+          ========================================= */
 
-          if (jogadores && jogadores.length > 0) {
+          // ===== BUSCAR JOGADOR =====
 
-              const jogador = jogadores[0];
+          const jogadores = templates.list['Jogador'] || [];
 
-              if (templates.valid(jogador)) {
+          const jogador = jogadores.find(
+              j => templates.valid(j)
+          );
 
-                  const dx = jogador.x - this.x;
-                  const dy = jogador.y - this.y;
-                  const distancia = Math.hypot(dx, dy);
+          // ===== PERSEGUIR JOGADOR =====
 
-                  // Persegue o jogador
-                  if (distancia > 20) {
-                      this.hspeed =
-                          (dx / distancia) * this.velocidade;
+          if (jogador && jogador.vida > 0) {
 
-                      this.vspeed =
-                          (dy / distancia) * this.velocidade;
-                  } else {
-                      this.hspeed = 0;
-                      this.vspeed = 0;
+              const dx = jogador.x - this.x;
+              const dy = jogador.y - this.y;
+
+              const distancia = Math.hypot(dx, dy);
+
+              if (distancia > 20) {
+
+                  this.hspeed =
+                      (dx / distancia) * this.velocidade;
+
+                  this.vspeed =
+                      (dy / distancia) * this.velocidade;
+
+              } else {
+
+                  this.hspeed = 0;
+                  this.vspeed = 0;
+              }
+
+              // Movimenta o inimigo
+              this.move();
+
+              // ===== ATAQUE =====
+
+              const colisao = place.meet(
+                  this,
+                  'Jogador'
+              );
+
+              if (colisao) {
+
+                  const agora = Date.now();
+
+                  if (
+                      agora - this.ultimoAtaque >=
+                      this.intervaloAtaque
+                  ) {
+
+                      jogador.vida = Math.max(
+                          0,
+                          jogador.vida - this.dano
+                      );
+
+                      this.ultimoAtaque = agora;
+
+                      console.log(
+                          'Jogador atingido! Vida:',
+                          jogador.vida
+                      );
                   }
+              }
 
-                  // Movimenta o zumbi
-                  this.move();
+          } else {
 
-                  // Verifica colisão com o jogador
-                  const colisao = place.meet(
-                      this,
-                      'Jogador'
+              this.hspeed = 0;
+              this.vspeed = 0;
+          }
+
+          // ===== BARRA DE VIDA =====
+
+          if (
+              this.ultimaVidaDesenhada !== this.vida ||
+              this.ultimaVidaMaximaDesenhada !==
+              this.vidaMaxima
+          ) {
+
+              this.ultimaVidaDesenhada = this.vida;
+              this.ultimaVidaMaximaDesenhada =
+                  this.vidaMaxima;
+
+              const percentual = Math.max(
+                  0,
+                  Math.min(
+                      1,
+                      this.vida / this.vidaMaxima
+                  )
+              );
+
+              this.barraVida.clear();
+
+              // Fundo da barra
+              this.barraVida.beginFill(0x542B35);
+
+              this.barraVida.drawRoundedRect(
+                  -20, 0, 40, 6, 2
+              );
+
+              this.barraVida.endFill();
+
+              // Preenchimento da barra
+              if (percentual > 0) {
+
+                  const cor = percentual <= 0.30
+                      ? 0xEF5365
+                      : 0x77C66E;
+
+                  this.barraVida.beginFill(cor);
+
+                  this.barraVida.drawRoundedRect(
+                      -20,
+                      0,
+                      40 * percentual,
+                      6,
+                      2
                   );
 
-                  if (colisao) {
-
-                      const agora = Date.now();
-
-                      // Limita o dano a cada 1 segundo
-                      if (
-                          agora - this.ultimoAtaque >=
-                          this.intervaloAtaque
-                      ) {
-
-                          jogador.vida -= this.dano;
-
-                          this.ultimoAtaque = agora;
-
-                          console.log(
-                              'Jogador atingido! Vida:',
-                              jogador.vida
-                          );
-
-                          // Impede vida negativa
-                          if (jogador.vida <= 0) {
-                              jogador.vida = 0;
-
-                              console.log('GAME OVER!');
-                          }
-                      }
-                  }
+                  this.barraVida.endFill();
               }
           }
         arguments: {}
       - eventKey: OnCreate
-        code: |-
+        code: |
+
+          /* =========================================
+             ULTIMA NOITE - ZUMBI
+             EVENTO: CRIACAO
+          ========================================= */
+
+          // Atributos iniciais
           this.vida = 40;
           this.vidaMaxima = 40;
           this.velocidade = 90;
           this.dano = 10;
           this.pontosAoMorrer = 100;
 
+          // Movimento
           this.hspeed = 0;
           this.vspeed = 0;
 
-          // Controle do intervalo entre ataques
+          // Ataque
           this.ultimoAtaque = 0;
           this.intervaloAtaque = 1000;
+
+          // ===== BARRA DE VIDA =====
+
+          this.barraVida = new PIXI.Graphics();
+
+          // Posicao relativa ao zumbi
+          this.barraVida.x = 0;
+          this.barraVida.y = -25;
+
+          // Adiciona a barra ao objeto
+          this.addChild(this.barraVida);
+
+          // Controle para evitar redesenhos
+          this.ultimaVidaDesenhada = -1;
+          this.ultimaVidaMaximaDesenhada = -1;
         arguments: {}
         lib: core
     extends:
       cgroup: ''
       'editor:myCollidingCGroups': []
-    lastmod: 1794252293293
+    lastmod: 1794425669402
     uid: Wc8qB488wMpN3Q
     behaviors: []
     extendTypes: ''
@@ -488,6 +594,41 @@ assets:
 
                   // Bloqueia novas mortes
                   zumbi.kill = true;
+
+          // Sorteia entre 1 e 3 moedas
+          const quantidadeMoedas =
+              Math.floor(Math.random() * 3) + 1;
+
+          for (let i = 0; i < quantidadeMoedas; i++) {
+
+              // Espalha as moedas perto do zumbi
+              const angulo = Math.random() * Math.PI * 2;
+              const distancia = 35 + Math.random() * 35;
+
+              const x = Math.max(
+                  16,
+                  Math.min(
+                      1264,
+                      zumbi.x + Math.cos(angulo) * distancia
+                  )
+              );
+
+              const y = Math.max(
+                  16,
+                  Math.min(
+                      704,
+                      zumbi.y + Math.sin(angulo) * distancia
+                  )
+              );
+
+              templates.copy('Moeda', x, y);
+          }
+
+          console.log(
+              'Zumbi deixou',
+              quantidadeMoedas,
+              'moedas!'
+          );
 
                   // Adiciona pontuação ao jogador
                   const jogadores =
@@ -580,67 +721,435 @@ assets:
     events:
       - eventKey: OnStep
         lib: core
-        code: |-
-          VIDA: 100/100
-          PONTOS: 0
-          MOEDAS: 0
+        code: |
+
+          // A HUD e atualizada no evento
+          // No final do quadro.
         arguments: {}
       - eventKey: OnDraw
         code: |
 
-          const jogadores = templates.list['Jogador'];
+          /* =========================================
+             ULTIMA NOITE - HUD
+             EVENTO: NO FINAL DO QUADRO
+          ========================================= */
+
+          // ===== BUSCAR JOGADOR =====
+
+          const jogadores = templates.list['Jogador'] || [];
+
+          const jogador = jogadores.find(
+              j => templates.valid(j)
+          );
+
+          if (!jogador) {
+
+              this.textoVida.text = '';
+              this.textoInfo.text = '';
+
+              this.graficosVida.clear();
+              this.lojaContainer.visible = false;
+
+              return;
+          }
+
+          // ===== BUSCAR GERENCIADOR =====
 
           const gerenciadores =
-              templates.list['GerenciadorOndas'];
+              templates.list['GerenciadorOndas'] || [];
 
-          if (jogadores && jogadores.length > 0) {
+          const gerenciador = gerenciadores.find(
+              g => templates.valid(g)
+          );
 
-              const jogador = jogadores[0];
+          // ===== CONTAR INIMIGOS =====
 
-              if (templates.valid(jogador)) {
+          const zumbis = templates.list['Zumbi'] || [];
 
-                  const vida = Math.max(
-                      0,
-                      Math.ceil(jogador.vida)
-                  );
+          const inimigos = zumbis.filter(
+              z => templates.valid(z) &&
+                   !z.kill &&
+                   z.vida > 0
+          ).length;
 
-                  let onda = 0;
-                  let inimigos = 0;
+          // ===== DADOS DO JOGADOR =====
 
-                  if (gerenciadores &&
-                      gerenciadores.length > 0) {
+          const vida = Math.max(
+              0,
+              Math.ceil(jogador.vida)
+          );
 
-                      const gerenciador = gerenciadores[0];
+          const vidaMaxima = Math.max(
+              1,
+              jogador.vidaMaxima
+          );
 
-                      if (templates.valid(gerenciador)) {
-                          onda = gerenciador.onda;
-                      }
-                  }
+          const percentual = Math.max(
+              0,
+              Math.min(
+                  1,
+                  vida / vidaMaxima
+              )
+          );
 
-                  const zumbis = templates.list['Zumbi'] || [];
+          // ===== DADOS DA ONDA =====
 
-                  inimigos = zumbis.filter(
-                      z => templates.valid(z) && z.vida > 0
-                  ).length;
+          const onda = gerenciador
+              ? gerenciador.onda
+              : 0;
 
-                  
-          this.text =
+          // ===== TEXTO DA VIDA =====
+
+          this.textoVida.text =
               'VIDA: ' + vida +
-              '/' + jogador.vidaMaxima +
-              '\nDANO: ' + jogador.dano +
-              '\nPONTOS: ' + jogador.pontos +
+              '/' + vidaMaxima;
+
+          // ===== DESENHAR BARRA DE VIDA =====
+
+          this.graficosVida.clear();
+
+          // Fundo da barra
+          this.graficosVida.beginFill(0x542B35);
+
+          this.graficosVida.drawRoundedRect(
+              5, 34, 250, 18, 6
+          );
+
+          this.graficosVida.endFill();
+
+          // Vida restante
+          if (percentual > 0) {
+
+              const cor = percentual <= 0.30
+                  ? 0xF59E42
+                  : 0xEF5365;
+
+              this.graficosVida.beginFill(cor);
+
+              this.graficosVida.drawRoundedRect(
+                  5,
+                  34,
+                  250 * percentual,
+                  18,
+                  6
+              );
+
+              this.graficosVida.endFill();
+          }
+
+          // ===== INFORMACOES DA PARTIDA =====
+
+          this.textoInfo.text =
+              'PONTOS: ' + jogador.pontos +
               '\nMOEDAS: ' + jogador.moedas +
               '\nONDA: ' + onda +
               '\nINIMIGOS: ' + inimigos;
 
+          // ===== VERIFICAR LOJA =====
+
+          const lojaAberta = Boolean(
+              gerenciador &&
+              gerenciador.estado === 'escolha'
+          );
+
+          this.lojaContainer.visible = lojaAberta;
+
+          // ===== DESENHAR LOJA =====
+
+          if (lojaAberta) {
+
+              // Fundo escuro da loja
+              this.fundoLoja.clear();
+
+              this.fundoLoja.beginFill(
+                  0x080D17,
+                  0.90
+              );
+
+              this.fundoLoja.drawRect(
+                  -25,
+                  -25,
+                  1280,
+                  720
+              );
+
+              this.fundoLoja.endFill();
+
+              // ===== TITULO =====
+
+              this.tituloLoja.text =
+                  'ONDA ' + onda +
+                  ' CONCLUIDA!\nLOJA DE MELHORIAS';
+
+              // ===== SALDO =====
+
+              this.saldoLoja.text =
+                  'SALDO: ' +
+                  jogador.moedas +
+                  ' MOEDAS';
+
+              // ===== LIMPAR DESENHOS =====
+
+              this.graficosLoja.clear();
+
+              const opcoes =
+                  gerenciador.opcoesMelhoria || [];
+
+              // ===== CRIAR OS TRES CARDS =====
+
+              for (let i = 0; i < 3; i++) {
+
+                  const melhoria = opcoes[i];
+
+                  if (!melhoria) {
+
+                      this.cardsLoja[i].text = '';
+                      continue;
+                  }
+
+                  const x = 235 + i * 260;
+                  const y = 270;
+
+                  const podeComprar =
+                      jogador.moedas >= melhoria.preco;
+
+                  // Cores do card
+                  const corFundo = podeComprar
+                      ? 0x293143
+                      : 0x353039;
+
+                  const corBorda = podeComprar
+                      ? 0xE6BE64
+                      : 0x76505A;
+
+                  // ===== FUNDO DO CARD =====
+
+                  this.graficosLoja.beginFill(
+                      corFundo
+                  );
+
+                  this.graficosLoja.drawRoundedRect(
+                      x,
+                      y,
+                      240,
+                      180,
+                      12
+                  );
+
+                  this.graficosLoja.endFill();
+
+                  // ===== BORDA DO CARD =====
+
+                  this.graficosLoja.lineStyle(
+                      2,
+                      corBorda
+                  );
+
+                  this.graficosLoja.drawRoundedRect(
+                      x,
+                      y,
+                      240,
+                      180,
+                      12
+                  );
+
+                  this.graficosLoja.lineStyle(0);
+
+                  // ===== STATUS DA COMPRA =====
+
+                  const status = podeComprar
+                      ? 'DISPONIVEL'
+                      : 'SEM MOEDAS';
+
+                  // ===== TEXTO DO CARD =====
+
+                  this.cardsLoja[i].text =
+                      '[' + (i + 1) + ']' +
+                      '\n\n' +
+                      melhoria.nome +
+                      '\n\n' +
+                      melhoria.preco + ' MOEDAS' +
+                      '\n' +
+                      status;
               }
+
+              // ===== INSTRUCOES =====
+
+              this.instrucaoLoja.text =
+                  'PRESSIONE 1, 2 OU 3 PARA COMPRAR' +
+                  '\nPRESSIONE 0 PARA PULAR';
           }
+        arguments: {}
+        lib: core
+      - eventKey: OnCreate
+        code: |
+
+          /* =========================================
+             ULTIMA NOITE - HUD
+             EVENTO: CRIACAO
+          ========================================= */
+
+          // Remove texto padrao
+          this.text = '';
+
+          // ===== FUNCAO PARA CRIAR TEXTOS =====
+
+          this.criarTexto = (
+              tamanho,
+              cor,
+              alinhamento = 'left'
+          ) => {
+
+              const texto = new PIXI.Text('', {
+                  fontFamily: 'Arial',
+                  fontSize: tamanho,
+                  fontWeight: 'bold',
+                  fill: cor,
+                  align: alinhamento
+              });
+
+              this.addChild(texto);
+
+              return texto;
+          };
+
+          // ===== BARRA DE VIDA DO JOGADOR =====
+
+          this.graficosVida = new PIXI.Graphics();
+
+          this.addChild(this.graficosVida);
+
+          this.textoVida = this.criarTexto(
+              22,
+              0xFFFFFF
+          );
+
+          this.textoVida.x = 5;
+          this.textoVida.y = 0;
+
+          // ===== PONTOS, MOEDAS E ONDAS =====
+
+          this.textoInfo = this.criarTexto(
+              20,
+              0xFFFFFF,
+              'right'
+          );
+
+          /* ===== POSICIONAMENTO DA HUD DIREITA ===== */
+
+          // Ancora o texto pelo canto superior direito
+          this.textoInfo.anchor.set(1, 0);
+
+          // Coordenada relativa ao Template HUD
+          this.textoInfo.x = 1050;
+          this.textoInfo.y = 0;
+
+
+
+          // ===== CONTAINER DA LOJA =====
+
+          this.lojaContainer = new PIXI.Container();
+
+          this.addChild(this.lojaContainer);
+
+          // Fundo escuro
+          this.fundoLoja = new PIXI.Graphics();
+
+          this.lojaContainer.addChild(
+              this.fundoLoja
+          );
+
+          // Fundo e bordas dos cards
+          this.graficosLoja = new PIXI.Graphics();
+
+          this.lojaContainer.addChild(
+              this.graficosLoja
+          );
+
+          // ===== FUNCAO PARA TEXTOS DA LOJA =====
+
+          this.criarTextoLoja = (
+              tamanho,
+              cor,
+              largura = 220
+          ) => {
+
+              const texto = new PIXI.Text('', {
+                  fontFamily: 'Arial',
+                  fontSize: tamanho,
+                  fontWeight: 'bold',
+                  fill: cor,
+                  align: 'center',
+                  wordWrap: true,
+                  wordWrapWidth: largura
+              });
+
+              texto.anchor.set(0.5);
+
+              this.lojaContainer.addChild(texto);
+
+              return texto;
+          };
+
+          // ===== TITULO DA LOJA =====
+
+          this.tituloLoja = this.criarTextoLoja(
+              30,
+              0xFFFFFF,
+              800
+          );
+
+          this.tituloLoja.x = 615;
+          this.tituloLoja.y = 155;
+
+          // ===== SALDO DE MOEDAS =====
+
+          this.saldoLoja = this.criarTextoLoja(
+              22,
+              0xFACC15,
+              600
+          );
+
+          this.saldoLoja.x = 615;
+          this.saldoLoja.y = 225;
+
+          // ===== TRES CARDS =====
+
+          this.cardsLoja = [];
+
+          for (let i = 0; i < 3; i++) {
+
+              const texto = this.criarTextoLoja(
+                  19,
+                  0xFFFFFF,
+                  215
+              );
+
+              texto.x = 355 + i * 260;
+              texto.y = 355;
+
+              this.cardsLoja.push(texto);
+          }
+
+          // ===== INSTRUCOES DA LOJA =====
+
+          this.instrucaoLoja = this.criarTextoLoja(
+              19,
+              0xD1D5DB,
+              900
+          );
+
+          this.instrucaoLoja.x = 615;
+          this.instrucaoLoja.y = 525;
+
+          // Loja inicialmente escondida
+          this.lojaContainer.visible = false;
         arguments: {}
         lib: core
     extends:
       cgroup: ''
       'editor:myCollidingCGroups': []
-    lastmod: 1794253899007
+    lastmod: 1794423860841
     uid: 1bqjJwgwt7pWJ3
     behaviors: []
     extendTypes: ''
@@ -658,7 +1167,7 @@ assets:
     events:
       - eventKey: OnStep
         lib: core
-        code: |
+        code: |-
 
           const agora = Date.now();
 
@@ -669,21 +1178,113 @@ assets:
               return;
           }
 
-          // Garante que somente um gerenciador execute
+          // Apenas o gerenciador principal executa
           const gerenciadores =
               templates.list['GerenciadorOndas'] || [];
 
-          const gerenciadorPrincipal =
-              gerenciadores.find(g => templates.valid(g));
+          const principal = gerenciadores.find(
+              g => templates.valid(g)
+          );
 
-          if (gerenciadorPrincipal !== this) {
+          if (principal !== this) {
               return;
           }
+
+
+          /* ===== LOJA DE MELHORIAS ===== */
+
+          if (this.estado === 'escolha') {
+
+              let indice = -1;
+
+              if (actions.Escolha1?.pressed) {
+                  indice = 0;
+              } else if (actions.Escolha2?.pressed) {
+                  indice = 1;
+              } else if (actions.Escolha3?.pressed) {
+                  indice = 2;
+              }
+
+              // Permite pular a loja com a tecla 0
+              if (actions.PularMelhoria?.pressed) {
+                  this.opcoesMelhoria = [];
+                  this.estado = 'intervalo';
+                  this.proximaOndaEm =
+                      agora + this.intervaloOndas;
+
+                  console.log('Loja ignorada.');
+                  return;
+              }
+
+              if (
+                  indice >= 0 &&
+                  indice < this.opcoesMelhoria.length
+              ) {
+                  const melhoria = this.opcoesMelhoria[indice];
+
+                  // Verifica saldo disponível
+                  if (jogador.moedas < melhoria.preco) {
+
+                      console.log(
+                          'MOEDAS INSUFICIENTES!',
+                          'Necessário:', melhoria.preco,
+                          'Disponível:', jogador.moedas
+                      );
+
+                      return;
+                  }
+
+                  // Aplica a melhoria
+                  switch (melhoria.id) {
+
+                      case 'dano':
+                          jogador.dano += 5;
+                          break;
+
+                      case 'movimento':
+                          jogador.velocidade += 20;
+                          break;
+
+                      case 'vida':
+                          jogador.vidaMaxima += 20;
+                          break;
+
+                      case 'projetil':
+                          jogador.velocidadeProjetil += 75;
+                          break;
+                  }
+
+                  // Desconta as moedas somente
+                  // depois de uma compra válida
+                  jogador.moedas -= melhoria.preco;
+
+                  console.log(
+                      'MELHORIA COMPRADA:',
+                      melhoria.nome,
+                      '| Preço:', melhoria.preco,
+                      '| Saldo:', jogador.moedas
+                  );
+
+                  // Fecha a loja
+                  this.opcoesMelhoria = [];
+                  this.estado = 'intervalo';
+
+                  this.proximaOndaEm =
+                      agora + this.intervaloOndas;
+              }
+
+              return;
+          }
+
+
+          /* ===== CONTAR ZUMBIS ===== */
 
           const zumbis = templates.list['Zumbi'] || [];
 
           const inimigosVivos = zumbis.filter(
-              z => templates.valid(z) && z.vida > 0
+              z => templates.valid(z) &&
+                   !z.kill &&
+                   z.vida > 0
           ).length;
 
           /* ===== INICIAR ONDA ===== */
@@ -698,7 +1299,6 @@ assets:
                   this.inimigosPorOnda +
                   (this.onda - 1) * 2;
 
-              // Bloqueia novo início imediatamente
               this.estado = 'combate';
               this.observouInimigos = false;
               this.inicioOndaEm = agora;
@@ -706,6 +1306,7 @@ assets:
               for (let i = 0; i < quantidade; i++) {
 
                   const lado = Math.floor(Math.random() * 4);
+
                   let x, y;
 
                   if (lado === 0) {
@@ -722,8 +1323,11 @@ assets:
                       y = 32 + Math.random() * 656;
                   }
 
-                  const zumbi = templates.copy('Zumbi', x, y);
+                  const zumbi = templates.copy(
+                      'Zumbi', x, y
+                  );
 
+                  // Escalonamento dos inimigos
                   zumbi.vidaMaxima =
                       40 + (this.onda - 1) * 10;
 
@@ -739,69 +1343,78 @@ assets:
               }
 
               console.log(
-                  'INÍCIO DA ONDA:',
-                  this.onda,
-                  '| Zumbis criados:',
-                  quantidade
+                  'ONDA', this.onda,
+                  '| INIMIGOS:', quantidade
               );
 
               return;
           }
 
-          /* ===== ACOMPANHAR COMBATE ===== */
+          /* ===== FINALIZAR ONDA ===== */
 
           if (this.estado === 'combate') {
 
-              // Confirma que os zumbis apareceram
               if (inimigosVivos > 0) {
                   this.observouInimigos = true;
               }
 
-              // Aguarda pelo menos 300ms após criar a onda
               const tempoMinimo =
                   agora - this.inicioOndaEm >= 300;
 
-              // Só conclui após observar inimigos vivos
               if (
                   this.observouInimigos &&
                   tempoMinimo &&
                   inimigosVivos === 0
               ) {
-                  this.estado = 'intervalo';
-
-                  this.proximaOndaEm =
-                      agora + this.intervaloOndas;
-
-                  // Melhorias do jogador
-                  
-           // Aumenta apenas a capacidade máxima de vida
-          jogador.vidaMaxima += 10;
-
-          // Aumenta o dano do jogador
-          jogador.dano += 5;
-
-          // NÃO recupera vida automaticamente
-          console.log(
-              'Vida atual:', jogador.vida,
-              '| Vida máxima:', jogador.vidaMaxima,
-              '| Dano:', jogador.dano
-          );
-                  jogador.dano += 5;
 
                   console.log(
-                      'ONDA CONCLUÍDA:',
-                      this.onda,
-                      '| Vida máxima:',
-                      jogador.vidaMaxima,
-                      '| Dano:',
-                      jogador.dano
+                      'ONDA', this.onda, 'CONCLUIDA!'
                   );
+
+                  // A cada terceira onda
+                  if (this.onda % 1 === 0) {
+
+                      this.estado = 'escolha';
+
+                      // Sorteia 3 melhorias sem repetição
+                      const disponiveis = [
+                          ...this.melhoriasDisponiveis
+                      ];
+
+                      for (let i = disponiveis.length - 1; i > 0; i--) {
+                          const j = Math.floor(
+                              Math.random() * (i + 1)
+                          );
+
+                          [
+                              disponiveis[i],
+                              disponiveis[j]
+                          ] = [
+                              disponiveis[j],
+                              disponiveis[i]
+                          ];
+                      }
+
+                      this.opcoesMelhoria =
+                          disponiveis.slice(0, 3);
+
+                      console.log(
+                          'ESCOLHA UMA MELHORIA:',
+                          this.opcoesMelhoria
+                      );
+
+                  } else {
+
+                      this.estado = 'intervalo';
+
+                      this.proximaOndaEm =
+                          agora + this.intervaloOndas;
+                  }
               }
           }
         arguments: {}
       - eventKey: OnCreate
-        code: |
-
+        code: |-
           this.onda = 0;
           this.inimigosPorOnda = 3;
           this.intervaloOndas = 3000;
@@ -809,15 +1422,41 @@ assets:
           this.estado = 'aguardando';
           this.proximaOndaEm = Date.now() + 1000;
 
-          // Proteções contra ondas duplicadas
+          // Proteção contra ondas duplicadas
           this.observouInimigos = false;
           this.inicioOndaEm = 0;
+
+          // Sistema de melhorias
+          this.melhoriasDisponiveis = [
+              {
+                  id: 'dano',
+                  nome: 'DANO +5',
+                  preco: 15
+              },
+              {
+                  id: 'movimento',
+                  nome: 'VELOCIDADE +20',
+                  preco: 10
+              },
+              {
+                  id: 'vida',
+                  nome: 'VIDA MAXIMA +20',
+                  preco: 20
+              },
+              {
+                  id: 'projetil',
+                  nome: 'PROJETIL +75',
+                  preco: 15
+              }
+          ];
+
+          this.opcoesMelhoria = [];
         arguments: {}
         lib: core
     extends:
       cgroup: ''
       'editor:myCollidingCGroups': []
-    lastmod: 1794253899010
+    lastmod: 1794423860843
     uid: j1P8f6c1cnnn97
     behaviors: []
     extendTypes: ''
@@ -898,6 +1537,120 @@ assets:
     uid: w5GfBKFnqBKKqB
     behaviors: []
     extendTypes: ''
+  - type: template
+    baseClass: AnimatedSprite
+    name: Moeda
+    depth: 0
+    texture: 6d7TTqMzbC8rR5
+    playAnimationOnStart: false
+    loopAnimation: true
+    animationFPS: 60
+    visible: true
+    events:
+      - eventKey: OnStep
+        lib: core
+        code: |
+
+          if (this.coletada) {
+              return;
+          }
+
+          const jogadores = templates.list['Jogador'] || [];
+
+          const jogador = jogadores.find(
+              j => templates.valid(j) && j.vida > 0
+          );
+
+          if (!jogador) {
+              return;
+          }
+
+          // Calcula a distância até o jogador
+          const dx = jogador.x - this.x;
+          const dy = jogador.y - this.y;
+          const distancia = Math.hypot(dx, dy);
+
+          // Ativa o ímã
+          if (distancia <= this.raioAtracao) {
+              this.sendoAtraida = true;
+          }
+
+          if (this.sendoAtraida && distancia > 0) {
+
+              // Aceleração gradual
+              this.velocidadeAtual = Math.min(
+                  this.velocidadeAtual +
+                  this.aceleracao * u.time,
+                  this.velocidadeMaxima
+              );
+
+              // Direção do movimento
+              this.hspeed =
+                  (dx / distancia) * this.velocidadeAtual;
+
+              this.vspeed =
+                  (dy / distancia) * this.velocidadeAtual;
+
+              // Faz a moeda deslizar
+              this.move();
+
+              // Verifica a distância após movimentar
+              const distanciaFinal = Math.hypot(
+                  jogador.x - this.x,
+                  jogador.y - this.y
+              );
+
+              if (distanciaFinal <= this.distanciaColeta) {
+
+                  jogador.moedas += this.valor;
+
+                  this.coletada = true;
+                  this.kill = true;
+
+                  console.log(
+                      'Moeda coletada! Total:',
+                      jogador.moedas
+                  );
+              }
+          }
+        arguments: {}
+      - eventKey: OnCreate
+        code: |
+
+          this.valor = 1;
+          this.coletada = false;
+
+          // Configurações do ímã
+          this.raioAtracao = 180;
+          this.distanciaColeta = 8;
+
+          // Velocidade em pixels por segundo
+          this.velocidadeAtual = 0;
+          this.velocidadeMaxima = 220;
+          this.aceleracao = 350;
+
+          // Controle da atração
+          this.sendoAtraida = false;
+
+          this.hspeed = 0;
+          this.vspeed = 0;
+        arguments: {}
+        lib: core
+    extends:
+      cgroup: circular
+      'editor:myCollidingCGroups':
+        - ''
+    lastmod: 1794423465405
+    uid: J85nHDQdmCR3kq
+    behaviors: []
+    extendTypes: ''
+    tilingSettings:
+      scrollSpeedX: 0
+      scrollSpeedY: 0
+      pixelPerfect: false
+      isUi: false
+    repeaterSettings:
+      defaultCount: 3
 globalVars: []
 settings:
   authoring:
