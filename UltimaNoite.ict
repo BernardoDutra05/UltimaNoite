@@ -10,7 +10,7 @@ libs:
   keyboard: {}
   keyboard.polyfill: {}
   pointer.polyfill: {}
-startroom: -1
+startroom: BRN4mB8QF6JmtD
 contentTypes: []
 actions:
   - name: MoveXesq
@@ -124,7 +124,7 @@ assets:
         bindings: {}
     tiles: []
     extends: {}
-    lastmod: 1794427161842
+    lastmod: 1794487175426
     events: []
     behaviors: []
     extendTypes: ''
@@ -277,98 +277,7 @@ assets:
     baseClass: AnimatedSprite
     name: Jogador
     depth: 0
-    texture: k9QwL7rngqPDhk
-    playAnimationOnStart: false
-    loopAnimation: true
-    animationFPS: 30
-    visible: true
-    events:
-      - eventKey: OnStep
-        lib: core
-        code: |+
-
-          /* ===== MOVIMENTAÇÃO ===== */
-
-          const dx = actions.MoveXesq.value +
-                     actions.MoveXdir.value;
-
-          const dy = actions.MoveYcima.value +
-                     actions.MoveYbaixo.value;
-
-          const distancia = Math.hypot(dx, dy);
-
-          if (distancia > 0) {
-              this.hspeed = (dx / distancia) * this.velocidade;
-              this.vspeed = (dy / distancia) * this.velocidade;
-          } else {
-              this.hspeed = 0;
-              this.vspeed = 0;
-          }
-
-          this.move();
-
-          // Limites da arena
-          this.x = Math.max(16, Math.min(1264, this.x));
-          this.y = Math.max(16, Math.min(704, this.y));
-
-
-          /* ===== MIRA COM O MOUSE ===== */
-
-          // Calcula o ângulo até o cursor
-          const angulo = u.pointDirection(
-              this.x,
-              this.y,
-              pointer.x,
-              pointer.y
-          );
-
-          // Rotaciona visualmente o jogador
-          // A textura original aponta para cima
-          this.angle = angulo + 90;
-
-
-          /* ===== DISPARO ===== */
-
-
-          if (actions.Atirar.pressed) {
-
-              const tiro = templates.copy(
-                  'Projetil',
-                  this.x,
-                  this.y
-              );
-
-              tiro.dano = this.dano;
-              tiro.speed = this.velocidadeProjetil;
-              tiro.direction = angulo;
-              tiro.angle = angulo;
-          }
-
-        arguments: {}
-      - eventKey: OnCreate
-        code: |-
-          //Atributos Iniciais
-          this.vida = 100;
-          this.vidaMaxima = 100;
-          this.velocidade = 240;
-          this.dano = 20;
-          this.moedas = 0;
-          this.pontos = 0;
-          this.velocidadeProjetil = 500;
-        arguments: {}
-        lib: core
-    extends:
-      cgroup: ''
-      'editor:myCollidingCGroups': []
-    lastmod: 1794423860845
-    uid: 489p9JKMb6NGWT
-    behaviors: []
-    extendTypes: ''
-  - type: template
-    baseClass: AnimatedSprite
-    name: Zumbi
-    depth: 0
-    texture: 9BrRzpMzmwL4Gq
+    texture: G365f6kHR8KwP8
     playAnimationOnStart: false
     loopAnimation: true
     animationFPS: 30
@@ -378,10 +287,250 @@ assets:
         lib: core
         code: |
 
-          /* =========================================
+          /* ==========================================
+             ULTIMA NOITE - JOGADOR
+             EVENTO: NO INICIO DO QUADRO
+
+             MOVIMENTACAO + MIRA + TIRO + ANIMACAO
+          ========================================== */
+
+          // ===== VERIFICAR SE ESTA VIVO =====
+
+          if (this.vida <= 0) {
+              this.hspeed = 0;
+              this.vspeed = 0;
+
+              if (this.animando) {
+                  this.gotoAndStop(0);
+                  this.animando = false;
+              }
+
+              return;
+          }
+
+
+          // ==========================================
+          // 1. MOVIMENTACAO WASD E SETAS
+          // ==========================================
+
+          const dx =
+              actions.MoveXesq.value +
+              actions.MoveXdir.value;
+
+          const dy =
+              actions.MoveYcima.value +
+              actions.MoveYbaixo.value;
+
+          // Normaliza o movimento diagonal
+          const distancia = Math.hypot(dx, dy);
+
+          if (distancia > 0) {
+
+              this.hspeed =
+                  (dx / distancia) * this.velocidade;
+
+              this.vspeed =
+                  (dy / distancia) * this.velocidade;
+
+          } else {
+
+              this.hspeed = 0;
+              this.vspeed = 0;
+          }
+
+          // Aplica o movimento
+          this.move();
+
+
+          // ==========================================
+          // 2. LIMITES DA ARENA
+          // ==========================================
+
+          // Impede que o jogador saia da arena
+          this.x = Math.max(
+              26,
+              Math.min(1254, this.x)
+          );
+
+          this.y = Math.max(
+              26,
+              Math.min(694, this.y)
+          );
+
+
+          // ==========================================
+          // 3. MIRA COM O MOUSE
+          // ==========================================
+
+          // Calcula a direcao entre o jogador
+          // e a posicao atual do cursor
+
+          const angulo = u.pointDirection(
+              this.x,
+              this.y,
+              pointer.x,
+              pointer.y
+          );
+
+          // O soldado aponta originalmente para cima.
+          // O ajuste de 90 graus compensa isso.
+
+          this.angle = angulo + 90;
+
+
+          // ==========================================
+          // 4. SISTEMA DE DISPARO
+          // ==========================================
+
+          if (actions.Atirar.pressed) {
+
+              // Cria o projetil na posicao do jogador
+              const tiro = templates.copy(
+                  'Projetil',
+                  this.x,
+                  this.y
+              );
+
+              // Usa o dano atualizado pelas melhorias
+              tiro.dano = this.dano;
+
+              // Usa a velocidade atual do projetil
+              tiro.speed = this.velocidadeProjetil;
+
+              // Direcao fisica do disparo
+              tiro.direction = angulo;
+
+              // Rotacao visual do projetil
+              tiro.angle = angulo;
+          }
+
+
+          // ==========================================
+          // 5. ANIMACAO DE CAMINHADA
+          // ==========================================
+
+          // Verifica se o jogador esta se movimentando
+          const andando = Math.hypot(
+              this.hspeed,
+              this.vspeed
+          ) > 1;
+
+          if (andando) {
+
+              // Inicia a animacao uma unica vez
+              if (!this.animando) {
+
+                  this.gotoAndPlay(0);
+
+                  this.animando = true;
+              }
+
+          } else {
+
+              // Quando para, volta ao primeiro quadro
+              if (this.animando) {
+
+                  this.gotoAndStop(0);
+
+                  this.animando = false;
+              }
+          }
+        arguments: {}
+      - eventKey: OnCreate
+        code: |
+
+          /* ==========================================
+             ULTIMA NOITE - JOGADOR
+             EVENTO: CRIACAO
+          ========================================== */
+
+          // ===== ATRIBUTOS DO JOGADOR =====
+
+          // Vida
+          this.vida = 100;
+          this.vidaMaxima = 100;
+
+          // Movimentacao
+          this.velocidade = 240;
+
+          // Combate
+          this.dano = 20;
+          this.velocidadeProjetil = 500;
+
+          // Recursos e pontuacao
+          this.moedas = 0;
+          this.pontos = 0;
+
+          // Estado do personagem
+          this.gameOverRegistrado = false;
+
+          // ===== MOVIMENTO INICIAL =====
+
+          this.hspeed = 0;
+          this.vspeed = 0;
+
+          // ===== VISUAL DO SOLDADO =====
+
+          // Reduz a spritesheet para o tamanho do jogo
+          this.scale.set(0.09);
+
+          // ===== ANIMACAO =====
+
+          // Velocidade da animacao
+          this.animationSpeed = 0.12;
+
+          // Repeticao da caminhada
+          this.loop = true;
+
+          // Inicia no primeiro quadro, parado
+          this.gotoAndStop(0);
+
+          // Controle interno da animacao
+          this.animando = false;
+
+          // ===== MIRA =====
+
+          // Soldado originalmente aponta para cima
+          this.angle = 0;
+
+          console.log(
+              'Jogador criado!',
+              'Vida:', this.vida,
+              'Dano:', this.dano,
+              'Velocidade:', this.velocidade
+          );
+        arguments: {}
+        lib: core
+    extends:
+      cgroup: ''
+      'editor:myCollidingCGroups': []
+    lastmod: 1794485924217
+    uid: 489p9JKMb6NGWT
+    behaviors: []
+    extendTypes: ''
+  - type: template
+    baseClass: AnimatedSprite
+    name: Zumbi
+    depth: 0
+    texture: g4J3wD789fdHjC
+    playAnimationOnStart: false
+    loopAnimation: true
+    animationFPS: 30
+    visible: true
+    events:
+      - eventKey: OnStep
+        lib: core
+        code: |
+
+          /* ==========================================
              ULTIMA NOITE - ZUMBI
              EVENTO: NO INICIO DO QUADRO
-          ========================================= */
+
+             PERSEGUICAO
+             SEPARACAO
+             ATAQUE
+             ROTACAO
+          ========================================== */
 
           // ===== BUSCAR JOGADOR =====
 
@@ -391,22 +540,108 @@ assets:
               j => templates.valid(j)
           );
 
-          // ===== PERSEGUIR JOGADOR =====
+          // ===== BUSCAR OUTROS ZUMBIS =====
 
-          if (jogador && jogador.vida > 0) {
+          const zumbis = (
+              templates.list['Zumbi'] || []
+          ).filter(
+              z => templates.valid(z) &&
+                   !z.kill &&
+                   z.vida > 0
+          );
+
+          // ===== MOVIMENTACAO =====
+
+          let moverX = 0;
+          let moverY = 0;
+
+          if (
+              jogador &&
+              jogador.vida > 0 &&
+              this.vida > 0
+          ) {
+
+              // ===== DIRECAO DO JOGADOR =====
 
               const dx = jogador.x - this.x;
               const dy = jogador.y - this.y;
 
               const distancia = Math.hypot(dx, dy);
 
+              // ===== ROTACAO DO ZUMBI =====
+
+              const angulo = u.pointDirection(
+                  this.x,
+                  this.y,
+                  jogador.x,
+                  jogador.y
+              );
+
+              // A sprite original olha para baixo
+              this.angle = angulo - 90;
+
+              // ===== PERSEGUICAO =====
+
               if (distancia > 20) {
+                  moverX = dx / distancia;
+                  moverY = dy / distancia;
+              }
+
+              // ===== SEPARACAO ENTRE ZUMBIS =====
+
+              let separarX = 0;
+              let separarY = 0;
+
+              for (const outro of zumbis) {
+
+                  if (outro === this) {
+                      continue;
+                  }
+
+                  const ox = this.x - outro.x;
+                  const oy = this.y - outro.y;
+
+                  const d = Math.hypot(ox, oy);
+
+                  if (
+                      d > 0 &&
+                      d < this.raioDeteccao
+                  ) {
+
+                      const intensidade =
+                          (this.raioDeteccao - d) /
+                          this.raioDeteccao;
+
+                      separarX +=
+                          (ox / d) * intensidade;
+
+                      separarY +=
+                          (oy / d) * intensidade;
+                  }
+              }
+
+              // ===== COMBINAR MOVIMENTOS =====
+
+              moverX +=
+                  separarX * this.forcaSeparacao;
+
+              moverY +=
+                  separarY * this.forcaSeparacao;
+
+              const tamanho = Math.hypot(
+                  moverX,
+                  moverY
+              );
+
+              if (tamanho > 0) {
 
                   this.hspeed =
-                      (dx / distancia) * this.velocidade;
+                      (moverX / tamanho) *
+                      this.velocidade;
 
                   this.vspeed =
-                      (dy / distancia) * this.velocidade;
+                      (moverY / tamanho) *
+                      this.velocidade;
 
               } else {
 
@@ -414,10 +649,71 @@ assets:
                   this.vspeed = 0;
               }
 
-              // Movimenta o inimigo
+              // ===== APLICAR MOVIMENTO =====
+
               this.move();
 
-              // ===== ATAQUE =====
+              // ===== CORRIGIR SOBREPOSICOES =====
+
+              const minimo = this.distanciaSeparacao;
+
+              for (let passo = 0; passo < 2; passo++) {
+
+                  for (const outro of zumbis) {
+
+                      if (outro === this) {
+                          continue;
+                      }
+
+                      let ox = this.x - outro.x;
+                      let oy = this.y - outro.y;
+
+                      let d = Math.hypot(ox, oy);
+
+                      if (d >= minimo) {
+                          continue;
+                      }
+
+                      if (d < 0.001) {
+
+                          const indice =
+                              zumbis.indexOf(this);
+
+                          const indiceOutro =
+                              zumbis.indexOf(outro);
+
+                          ox = indice > indiceOutro
+                              ? 1
+                              : -1;
+
+                          oy = 0;
+                          d = 1;
+                      }
+
+                      const sobreposicao =
+                          minimo - d;
+
+                      this.x +=
+                          (ox / d) * sobreposicao;
+
+                      this.y +=
+                          (oy / d) * sobreposicao;
+                  }
+              }
+
+              // ===== LIMITES DA ARENA =====
+
+              this.x = Math.max(
+                  26,
+                  Math.min(1254, this.x)
+              );
+
+              this.y = Math.max(
+                  26,
+                  Math.min(694, this.y)
+              );
+
+              // ===== ATAQUE AO JOGADOR =====
 
               const colisao = place.meet(
                   this,
@@ -444,6 +740,10 @@ assets:
                           'Jogador atingido! Vida:',
                           jogador.vida
                       );
+
+                      if (jogador.vida <= 0) {
+                          console.log('GAME OVER!');
+                      }
                   }
               }
 
@@ -452,102 +752,71 @@ assets:
               this.hspeed = 0;
               this.vspeed = 0;
           }
-
-          // ===== BARRA DE VIDA =====
-
-          if (
-              this.ultimaVidaDesenhada !== this.vida ||
-              this.ultimaVidaMaximaDesenhada !==
-              this.vidaMaxima
-          ) {
-
-              this.ultimaVidaDesenhada = this.vida;
-              this.ultimaVidaMaximaDesenhada =
-                  this.vidaMaxima;
-
-              const percentual = Math.max(
-                  0,
-                  Math.min(
-                      1,
-                      this.vida / this.vidaMaxima
-                  )
-              );
-
-              this.barraVida.clear();
-
-              // Fundo da barra
-              this.barraVida.beginFill(0x542B35);
-
-              this.barraVida.drawRoundedRect(
-                  -20, 0, 40, 6, 2
-              );
-
-              this.barraVida.endFill();
-
-              // Preenchimento da barra
-              if (percentual > 0) {
-
-                  const cor = percentual <= 0.30
-                      ? 0xEF5365
-                      : 0x77C66E;
-
-                  this.barraVida.beginFill(cor);
-
-                  this.barraVida.drawRoundedRect(
-                      -20,
-                      0,
-                      40 * percentual,
-                      6,
-                      2
-                  );
-
-                  this.barraVida.endFill();
-              }
-          }
         arguments: {}
       - eventKey: OnCreate
         code: |
 
-          /* =========================================
+          /* ==========================================
              ULTIMA NOITE - ZUMBI
              EVENTO: CRIACAO
-          ========================================= */
+          ========================================== */
 
-          // Atributos iniciais
+          // ===== ATRIBUTOS =====
+
           this.vida = 40;
           this.vidaMaxima = 40;
+
           this.velocidade = 90;
           this.dano = 10;
+
           this.pontosAoMorrer = 100;
 
-          // Movimento
+          // ===== MOVIMENTACAO =====
+
           this.hspeed = 0;
           this.vspeed = 0;
 
-          // Ataque
+          // ===== ATAQUE =====
+
           this.ultimoAtaque = 0;
           this.intervaloAtaque = 1000;
 
-          // ===== BARRA DE VIDA =====
+          // ===== SEPARACAO ENTRE ZUMBIS =====
 
-          this.barraVida = new PIXI.Graphics();
+          // Distancia minima entre centros
+          this.distanciaSeparacao = 35;
 
-          // Posicao relativa ao zumbi
-          this.barraVida.x = 0;
-          this.barraVida.y = -25;
+          // Forca de separacao
+          this.forcaSeparacao = 2.5;
 
-          // Adiciona a barra ao objeto
-          this.addChild(this.barraVida);
+          // Raio de deteccao dos outros zumbis
+          this.raioDeteccao = 55;
 
-          // Controle para evitar redesenhos
-          this.ultimaVidaDesenhada = -1;
-          this.ultimaVidaMaximaDesenhada = -1;
+          // ===== VISUAL REALISTA =====
+
+          // Escala do zumbi
+          this.scale.set(0.08);
+
+          // ===== ANIMACAO =====
+
+          // Velocidade da animacao
+          this.animationSpeed = 0.09;
+
+          // Repeticao dos quadros
+          this.loop = true;
+
+          // Inicia a caminhada
+          this.gotoAndPlay(0);
+
+          // ===== ROTACAO =====
+
+          this.angle = 0;
         arguments: {}
         lib: core
     extends:
       cgroup: ''
       'editor:myCollidingCGroups': []
-    lastmod: 1794425669402
+    lastmod: 1794486805237
     uid: Wc8qB488wMpN3Q
     behaviors: []
     extendTypes: ''
@@ -729,12 +998,14 @@ assets:
       - eventKey: OnDraw
         code: |
 
-          /* =========================================
+          /* ==========================================
              ULTIMA NOITE - HUD
              EVENTO: NO FINAL DO QUADRO
-          ========================================= */
+          ========================================== */
 
-          // ===== BUSCAR JOGADOR =====
+          // ==========================================
+          // 1. BUSCAR JOGADOR
+          // ==========================================
 
           const jogadores = templates.list['Jogador'] || [];
 
@@ -748,12 +1019,16 @@ assets:
               this.textoInfo.text = '';
 
               this.graficosVida.clear();
+              this.barrasZumbis.clear();
+
               this.lojaContainer.visible = false;
 
               return;
           }
 
-          // ===== BUSCAR GERENCIADOR =====
+          // ==========================================
+          // 2. BUSCAR GERENCIADOR DE ONDAS
+          // ==========================================
 
           const gerenciadores =
               templates.list['GerenciadorOndas'] || [];
@@ -762,17 +1037,89 @@ assets:
               g => templates.valid(g)
           );
 
-          // ===== CONTAR INIMIGOS =====
+          // ==========================================
+          // 3. VERIFICAR GAME OVER
+          // ==========================================
+
+          if (
+              jogador.vida <= 0 &&
+              !jogador.gameOverRegistrado
+          ) {
+
+              jogador.gameOverRegistrado = true;
+
+              const pontos = jogador.pontos;
+
+              const onda = gerenciador
+                  ? gerenciador.onda
+                  : 0;
+
+              let recorde = 0;
+
+              try {
+
+                  recorde = Number(
+                      localStorage.getItem(
+                          'UltimaNoite_recorde'
+                      ) || 0
+                  );
+
+                  if (pontos > recorde) {
+
+                      recorde = pontos;
+
+                      localStorage.setItem(
+                          'UltimaNoite_recorde',
+                          String(recorde)
+                      );
+                  }
+
+              } catch (erro) {
+
+                  recorde = Math.max(
+                      recorde,
+                      pontos
+                  );
+
+                  console.warn(
+                      'Nao foi possivel salvar o recorde',
+                      erro
+                  );
+              }
+
+              ct.ultimaNoiteResultado = {
+                  pontos: pontos,
+                  onda: onda,
+                  recorde: recorde
+              };
+
+              console.log(
+                  'GAME OVER!',
+                  ct.ultimaNoiteResultado
+              );
+
+              rooms.switch('rm_gameover');
+
+              return;
+          }
+
+          // ==========================================
+          // 4. CONTAR ZUMBIS
+          // ==========================================
 
           const zumbis = templates.list['Zumbi'] || [];
 
-          const inimigos = zumbis.filter(
+          const zumbisVivos = zumbis.filter(
               z => templates.valid(z) &&
                    !z.kill &&
                    z.vida > 0
-          ).length;
+          );
 
-          // ===== DADOS DO JOGADOR =====
+          const inimigos = zumbisVivos.length;
+
+          // ==========================================
+          // 5. ATRIBUTOS DO JOGADOR
+          // ==========================================
 
           const vida = Math.max(
               0,
@@ -784,7 +1131,7 @@ assets:
               jogador.vidaMaxima
           );
 
-          const percentual = Math.max(
+          const percentualVida = Math.max(
               0,
               Math.min(
                   1,
@@ -792,19 +1139,17 @@ assets:
               )
           );
 
-          // ===== DADOS DA ONDA =====
-
-          const onda = gerenciador
+          const ondaAtual = gerenciador
               ? gerenciador.onda
               : 0;
 
-          // ===== TEXTO DA VIDA =====
+          // ==========================================
+          // 6. BARRA DE VIDA DO JOGADOR
+          // ==========================================
 
           this.textoVida.text =
               'VIDA: ' + vida +
               '/' + vidaMaxima;
-
-          // ===== DESENHAR BARRA DE VIDA =====
 
           this.graficosVida.clear();
 
@@ -812,15 +1157,19 @@ assets:
           this.graficosVida.beginFill(0x542B35);
 
           this.graficosVida.drawRoundedRect(
-              5, 34, 250, 18, 6
+              5,
+              34,
+              250,
+              18,
+              6
           );
 
           this.graficosVida.endFill();
 
-          // Vida restante
-          if (percentual > 0) {
+          // Vida atual
+          if (percentualVida > 0) {
 
-              const cor = percentual <= 0.30
+              const cor = percentualVida <= 0.30
                   ? 0xF59E42
                   : 0xEF5365;
 
@@ -829,7 +1178,7 @@ assets:
               this.graficosVida.drawRoundedRect(
                   5,
                   34,
-                  250 * percentual,
+                  250 * percentualVida,
                   18,
                   6
               );
@@ -837,15 +1186,100 @@ assets:
               this.graficosVida.endFill();
           }
 
-          // ===== INFORMACOES DA PARTIDA =====
+          // ==========================================
+          // 7. INFORMACOES DA PARTIDA
+          // ==========================================
 
           this.textoInfo.text =
               'PONTOS: ' + jogador.pontos +
               '\nMOEDAS: ' + jogador.moedas +
-              '\nONDA: ' + onda +
+              '\nONDA: ' + ondaAtual +
               '\nINIMIGOS: ' + inimigos;
 
-          // ===== VERIFICAR LOJA =====
+          // ==========================================
+          // 8. BARRAS DE VIDA DOS ZUMBIS
+          // ==========================================
+
+          this.barrasZumbis.clear();
+
+          for (const zumbi of zumbisVivos) {
+
+              // Evita divisao por zero
+              const vidaMaxZumbi = Math.max(
+                  1,
+                  zumbi.vidaMaxima
+              );
+
+              const percentual = Math.max(
+                  0,
+                  Math.min(
+                      1,
+                      zumbi.vida / vidaMaxZumbi
+                  )
+              );
+
+              // Coordenadas relativas a HUD
+              const x = zumbi.x - this.x;
+
+              const y =
+                  zumbi.y -
+                  this.y -
+                  this.deslocamentoBarraZumbi;
+
+              const largura = this.larguraBarraZumbi;
+
+              const altura = this.alturaBarraZumbi;
+
+              // ===== COR DA BARRA =====
+
+              let cor = 0x72D46D;
+
+              if (percentual <= 0.30) {
+
+                  cor = 0xEF5961;
+
+              } else if (percentual <= 0.60) {
+
+                  cor = 0xEFBB4E;
+              }
+
+              // ===== FUNDO DA BARRA =====
+
+              this.barrasZumbis.beginFill(
+                  0x512B34
+              );
+
+              this.barrasZumbis.drawRoundedRect(
+                  x - largura / 2,
+                  y,
+                  largura,
+                  altura,
+                  3
+              );
+
+              this.barrasZumbis.endFill();
+
+              // ===== VIDA RESTANTE =====
+
+              if (percentual > 0) {
+
+                  this.barrasZumbis.beginFill(cor);
+
+                  this.barrasZumbis.drawRoundedRect(
+                      x - largura / 2,
+                      y,
+                      largura * percentual,
+                      altura,
+                      3
+                  );
+
+                  this.barrasZumbis.endFill();
+              }
+          }
+
+          // ==========================================
+          // 9. VERIFICAR LOJA
+          // ==========================================
 
           const lojaAberta = Boolean(
               gerenciador &&
@@ -854,11 +1288,14 @@ assets:
 
           this.lojaContainer.visible = lojaAberta;
 
-          // ===== DESENHAR LOJA =====
+          // ==========================================
+          // 10. DESENHAR LOJA
+          // ==========================================
 
           if (lojaAberta) {
 
-              // Fundo escuro da loja
+              // ===== FUNDO ESCURO =====
+
               this.fundoLoja.clear();
 
               this.fundoLoja.beginFill(
@@ -878,7 +1315,7 @@ assets:
               // ===== TITULO =====
 
               this.tituloLoja.text =
-                  'ONDA ' + onda +
+                  'ONDA ' + ondaAtual +
                   ' CONCLUIDA!\nLOJA DE MELHORIAS';
 
               // ===== SALDO =====
@@ -888,14 +1325,12 @@ assets:
                   jogador.moedas +
                   ' MOEDAS';
 
-              // ===== LIMPAR DESENHOS =====
+              // ===== CARDS =====
 
               this.graficosLoja.clear();
 
               const opcoes =
                   gerenciador.opcoesMelhoria || [];
-
-              // ===== CRIAR OS TRES CARDS =====
 
               for (let i = 0; i < 3; i++) {
 
@@ -913,7 +1348,6 @@ assets:
                   const podeComprar =
                       jogador.moedas >= melhoria.preco;
 
-                  // Cores do card
                   const corFundo = podeComprar
                       ? 0x293143
                       : 0x353039;
@@ -938,7 +1372,7 @@ assets:
 
                   this.graficosLoja.endFill();
 
-                  // ===== BORDA DO CARD =====
+                  // ===== BORDA =====
 
                   this.graficosLoja.lineStyle(
                       2,
@@ -955,13 +1389,13 @@ assets:
 
                   this.graficosLoja.lineStyle(0);
 
-                  // ===== STATUS DA COMPRA =====
+                  // ===== DISPONIBILIDADE =====
 
                   const status = podeComprar
                       ? 'DISPONIVEL'
                       : 'SEM MOEDAS';
 
-                  // ===== TEXTO DO CARD =====
+                  // ===== TEXTO =====
 
                   this.cardsLoja[i].text =
                       '[' + (i + 1) + ']' +
@@ -984,12 +1418,11 @@ assets:
       - eventKey: OnCreate
         code: |
 
-          /* =========================================
+          /* ==========================================
              ULTIMA NOITE - HUD
              EVENTO: CRIACAO
-          ========================================= */
+          ========================================== */
 
-          // Remove texto padrao
           this.text = '';
 
           // ===== FUNCAO PARA CRIAR TEXTOS =====
@@ -1000,20 +1433,25 @@ assets:
               alinhamento = 'left'
           ) => {
 
-              const texto = new PIXI.Text('', {
+              const estilo = new PIXI.TextStyle({
                   fontFamily: 'Arial',
                   fontSize: tamanho,
                   fontWeight: 'bold',
-                  fill: cor,
-                  align: alinhamento
+                  fill: cor
               });
+
+              estilo.align = alinhamento;
+
+              const texto = new PIXI.Text('', estilo);
 
               this.addChild(texto);
 
               return texto;
           };
 
-          // ===== BARRA DE VIDA DO JOGADOR =====
+          // ==========================================
+          // BARRA DE VIDA DO JOGADOR
+          // ==========================================
 
           this.graficosVida = new PIXI.Graphics();
 
@@ -1027,7 +1465,9 @@ assets:
           this.textoVida.x = 5;
           this.textoVida.y = 0;
 
-          // ===== PONTOS, MOEDAS E ONDAS =====
+          // ==========================================
+          // INFORMACOES DA PARTIDA
+          // ==========================================
 
           this.textoInfo = this.criarTexto(
               20,
@@ -1035,18 +1475,32 @@ assets:
               'right'
           );
 
-          /* ===== POSICIONAMENTO DA HUD DIREITA ===== */
-
-          // Ancora o texto pelo canto superior direito
+          // Ancora o texto pelo lado direito
           this.textoInfo.anchor.set(1, 0);
 
-          // Coordenada relativa ao Template HUD
+          // Mantem o texto dentro da arena
+
+          /* ===== POSICIONAMENTO DAS INFORMACOES ===== */
+
+          // Alinha o texto pelo canto direito
+          this.textoInfo.anchor.set(1, 0);
+
+          // Posiciona com margem de seguranca
           this.textoInfo.x = 1050;
           this.textoInfo.y = 0;
 
 
+          // ==========================================
+          // BARRAS INDEPENDENTES DOS ZUMBIS
+          // ==========================================
 
-          // ===== CONTAINER DA LOJA =====
+          this.barrasZumbis = new PIXI.Graphics();
+
+          this.addChild(this.barrasZumbis);
+
+          // ==========================================
+          // CONTAINER DA LOJA
+          // ==========================================
 
           this.lojaContainer = new PIXI.Container();
 
@@ -1074,15 +1528,18 @@ assets:
               largura = 220
           ) => {
 
-              const texto = new PIXI.Text('', {
+              const estilo = new PIXI.TextStyle({
                   fontFamily: 'Arial',
                   fontSize: tamanho,
                   fontWeight: 'bold',
                   fill: cor,
-                  align: 'center',
                   wordWrap: true,
                   wordWrapWidth: largura
               });
+
+              estilo.align = 'center';
+
+              const texto = new PIXI.Text('', estilo);
 
               texto.anchor.set(0.5);
 
@@ -1102,7 +1559,7 @@ assets:
           this.tituloLoja.x = 615;
           this.tituloLoja.y = 155;
 
-          // ===== SALDO DE MOEDAS =====
+          // ===== SALDO =====
 
           this.saldoLoja = this.criarTextoLoja(
               22,
@@ -1113,7 +1570,7 @@ assets:
           this.saldoLoja.x = 615;
           this.saldoLoja.y = 225;
 
-          // ===== TRES CARDS =====
+          // ===== TEXTOS DOS TRES CARDS =====
 
           this.cardsLoja = [];
 
@@ -1131,7 +1588,7 @@ assets:
               this.cardsLoja.push(texto);
           }
 
-          // ===== INSTRUCOES DA LOJA =====
+          // ===== INSTRUCOES =====
 
           this.instrucaoLoja = this.criarTextoLoja(
               19,
@@ -1142,14 +1599,22 @@ assets:
           this.instrucaoLoja.x = 615;
           this.instrucaoLoja.y = 525;
 
-          // Loja inicialmente escondida
+          // Loja inicialmente oculta
           this.lojaContainer.visible = false;
+
+          // ===== CONFIGURACAO DAS BARRAS =====
+
+          this.larguraBarraZumbi = 46;
+          this.alturaBarraZumbi = 7;
+
+          // Posicao acima dos zumbis
+          this.deslocamentoBarraZumbi = 43;
         arguments: {}
         lib: core
     extends:
       cgroup: ''
       'editor:myCollidingCGroups': []
-    lastmod: 1794423860841
+    lastmod: 1794486805241
     uid: 1bqjJwgwt7pWJ3
     behaviors: []
     extendTypes: ''
@@ -1372,9 +1837,30 @@ assets:
                   );
 
                   // A cada terceira onda
-                  if (this.onda % 1 === 0) {
+                  
+          if (this.onda % 1 === 0) {
 
-                      this.estado = 'escolha';
+              // Recolhe as moedas restantes do mapa
+              const moedasRestantes =
+                  templates.list['Moeda'] || [];
+
+              for (const moeda of moedasRestantes) {
+
+                  if (
+                      templates.valid(moeda) &&
+                      !moeda.kill &&
+                      !moeda.coletada
+                  ) {
+                      jogador.moedas += moeda.valor;
+
+                      moeda.coletada = true;
+                      moeda.kill = true;
+                  }
+              }
+
+              // Abre a loja após recolher as moedas
+              this.estado = 'escolha';
+          ``
 
                       // Sorteia 3 melhorias sem repetição
                       const disponiveis = [
@@ -1651,6 +2137,557 @@ assets:
       isUi: false
     repeaterSettings:
       defaultCount: 3
+  - type: room
+    oncreate: ''
+    onstep: ''
+    ondraw: ''
+    onleave: ''
+    gridX: 64
+    gridY: 64
+    diagonalGrid: false
+    disableGrid: false
+    simulate: true
+    width: 1280
+    height: 720
+    restrictCamera: false
+    restrictMaxX: 1280
+    restrictMinX: 0
+    restrictMaxY: 720
+    restrictMinY: 0
+    isUi: false
+    name: rm_menu
+    backgroundColor: 'rgba(0,0,0,0)'
+    follow: -1
+    backgrounds: []
+    copies:
+      - x: 0
+        'y': 0
+        opacity: 1
+        tint: 16777215
+        scale:
+          x: 1
+          'y': 1
+        rotation: 0
+        uid: Gh8jPp9J1L7mfq
+        exts: {}
+        customProperties: {}
+        customText: !<tag:yaml.org,2002:js/undefined> ''
+        customSize: !<tag:yaml.org,2002:js/undefined> ''
+        customWordWrap: !<tag:yaml.org,2002:js/undefined> ''
+        bindings: {}
+    tiles: []
+    extends: {}
+    lastmod: 1794487175467
+    events: []
+    behaviors: []
+    extendTypes: ''
+    uid: BRN4mB8QF6JmtD
+  - type: template
+    baseClass: Text
+    name: TelaMenu
+    depth: 0
+    texture: -1
+    playAnimationOnStart: false
+    loopAnimation: true
+    animationFPS: 30
+    visible: true
+    events:
+      - eventKey: OnCreate
+        code: |
+
+          /* =====================================
+             ULTIMA NOITE - MENU PRINCIPAL
+             EVENTO: CRIACAO
+          ===================================== */
+
+          this.text = '';
+
+          // Grupo principal
+          this.painel = new PIXI.Container();
+          this.addChild(this.painel);
+
+          // Funcao de texto
+          this.criarTexto = (conteudo, tamanho, cor, x, y) => {
+              const txt = new PIXI.Text(conteudo, {
+                  fontFamily: 'Arial',
+                  fontSize: tamanho,
+                  fontWeight: 'bold',
+                  fill: cor,
+                  align: 'center'
+              });
+
+              txt.anchor.set(0.5);
+              txt.x = x;
+              txt.y = y;
+
+              this.painel.addChild(txt);
+              return txt;
+          };
+
+          // Funcao de botao
+          this.criarBotao = (nome, x, y, largura, acao) => {
+              const botao = new PIXI.Container();
+
+              botao.x = x;
+              botao.y = y;
+
+              const fundo = new PIXI.Graphics();
+              fundo.beginFill(0x293548);
+              fundo.lineStyle(2, 0x536985);
+              fundo.drawRoundedRect(
+                  0, 0, largura, 58, 10
+              );
+              fundo.endFill();
+
+              botao.addChild(fundo);
+
+              const texto = new PIXI.Text(nome, {
+                  fontFamily: 'Arial',
+                  fontSize: 22,
+                  fontWeight: 'bold',
+                  fill: 0xFFFFFF
+              });
+
+              texto.anchor.set(0.5);
+              texto.x = largura / 2;
+              texto.y = 29;
+
+              botao.addChild(texto);
+
+              
+              botao.eventMode = 'static';
+              botao.cursor = 'pointer';
+
+
+              botao.hitArea = new PIXI.Rectangle(
+                  0, 0, largura, 58
+              );
+
+              botao.on('pointertap', acao);
+
+              this.painel.addChild(botao);
+              return botao;
+          };
+
+          // ===== TITULO =====
+
+          this.titulo = this.criarTexto(
+              'ULTIMA NOITE',
+              58,
+              0xFFFFFF,
+              640, 160
+          );
+
+          this.subtitulo = this.criarTexto(
+              'SOBREVIVA A NOITE',
+              20,
+              0xE9BD6E,
+              640, 215
+          );
+
+          // ===== TEXTOS DAS PAGINAS =====
+
+          this.conteudo = this.criarTexto(
+              '',
+              22,
+              0xFFFFFF,
+              640, 335
+          );
+
+          this.conteudo.style.wordWrap = true;
+          this.conteudo.style.wordWrapWidth = 850;
+
+          // ===== BOTOES =====
+
+
+          this.btnJogar = this.criarBotao(
+              'JOGAR',
+              490, 290, 300,
+              () => {
+                  console.log('BOTAO JOGAR CLICADO');
+                  console.log(
+                      'Room antes:',
+                      rooms.current
+                  );
+
+                  try {
+                      rooms.switch('rm_jogo');
+
+                      console.log(
+                          'Troca solicitada para rm_jogo'
+                      );
+                  } catch (erro) {
+                      console.error(
+                          'ERRO AO TROCAR ROOM:',
+                          erro
+                      );
+                  }
+              }
+          );
+
+
+          this.btnComo = this.criarBotao(
+              'COMO JOGAR',
+              490, 365, 300,
+              () => this.mostrarPagina('ajuda')
+          );
+
+          this.btnCreditos = this.criarBotao(
+              'CREDITOS',
+              490, 440, 300,
+              () => this.mostrarPagina('creditos')
+          );
+
+          this.btnVoltar = this.criarBotao(
+              'VOLTAR',
+              490, 520, 300,
+              () => this.mostrarPagina('inicio')
+          );
+
+          // ===== NAVEGACAO =====
+
+          this.mostrarPagina = (pagina) => {
+              const inicio = pagina === 'inicio';
+
+              this.btnJogar.visible = inicio;
+              this.btnComo.visible = inicio;
+              this.btnCreditos.visible = inicio;
+              this.btnVoltar.visible = !inicio;
+
+              this.conteudo.visible = !inicio;
+
+              if (pagina === 'ajuda') {
+                  this.conteudo.text =
+                      'COMO JOGAR\n\n' +
+                      'WASD OU SETAS - MOVIMENTAR\n' +
+                      'MOUSE - MIRAR\n' +
+                      'CLIQUE ESQUERDO - ATIRAR\n' +
+                      '1, 2 OU 3 - COMPRAR MELHORIA\n' +
+                      '0 - PULAR A LOJA\n\n' +
+                      'ELIMINE ZUMBIS, COLETE MOEDAS\n' +
+                      'E KITS MEDICOS PARA SOBREVIVER.';
+              }
+
+              if (pagina === 'creditos') {
+                  this.conteudo.text =
+                      'CREDITOS\n\n' +
+                      'ULTIMA NOITE - 2026\n\n' +
+                      'DESENVOLVIMENTO:\n' +
+                      'Bernardo Dutra Aperibense Ottoni' +
+                      'Bruno Oliveira de Souza' +
+                      'Nicolas Reis Xavier Silva' +
+                      'Alceu Vasconcellos Botelho dos Reis' +
+                      'DESENVOLVIDO COM CT.JS 5.3.1';
+              }
+          };
+
+          this.mostrarPagina('inicio');
+        arguments: {}
+        lib: core
+    extends:
+      cgroup: ''
+      'editor:myCollidingCGroups': []
+    lastmod: 1794437472452
+    uid: Gh8jPp9J1L7mfq
+    behaviors: []
+    extendTypes: ''
+    defaultText: ''
+    textStyle: 2KWWMJk43hLqWJ
+  - type: room
+    oncreate: ''
+    onstep: ''
+    ondraw: ''
+    onleave: ''
+    gridX: 64
+    gridY: 64
+    diagonalGrid: false
+    disableGrid: false
+    simulate: true
+    width: 1280
+    height: 720
+    restrictCamera: false
+    restrictMaxX: 1280
+    restrictMinX: 0
+    restrictMaxY: 720
+    restrictMinY: 0
+    isUi: false
+    name: rm_gameover
+    backgroundColor: 'rgba(0,0,0,0)'
+    follow: -1
+    backgrounds: []
+    copies:
+      - x: 0
+        'y': 0
+        opacity: 1
+        tint: 16777215
+        scale:
+          x: 1
+          'y': 1
+        rotation: 0
+        uid: RK69R3ddKhKp9f
+        exts: {}
+        customProperties: {}
+        customText: !<tag:yaml.org,2002:js/undefined> ''
+        customSize: !<tag:yaml.org,2002:js/undefined> ''
+        customWordWrap: !<tag:yaml.org,2002:js/undefined> ''
+        bindings: {}
+    tiles: []
+    extends: {}
+    lastmod: 1794487175513
+    events: []
+    behaviors: []
+    extendTypes: ''
+    uid: h1Hj9RMwMhMBG3
+  - type: template
+    baseClass: Text
+    name: TelaGameOver
+    depth: 0
+    texture: -1
+    playAnimationOnStart: false
+    loopAnimation: true
+    animationFPS: 30
+    visible: true
+    events:
+      - eventKey: OnCreate
+        code: |
+
+          /* ==========================================
+             ULTIMA NOITE - TELA GAME OVER
+             EVENTO: CRIACAO
+          ========================================== */
+
+          this.text = '';
+
+          // Dados recebidos da partida
+          const resultado = ct.ultimaNoiteResultado || {
+              pontos: 0,
+              onda: 0,
+              recorde: 0
+          };
+
+          // ===== FUNCAO PARA CRIAR TEXTOS =====
+
+          const criarTexto = (conteudo, tamanho, cor, x, y) => {
+              const texto = new PIXI.Text(conteudo, {
+                  fontFamily: 'Arial',
+                  fontSize: tamanho,
+                  fontWeight: 'bold',
+                  fill: cor,
+                  align: 'center'
+              });
+
+              texto.anchor.set(0.5);
+              texto.x = x;
+              texto.y = y;
+
+              this.addChild(texto);
+              return texto;
+          };
+
+          // ===== PAINEL CENTRAL =====
+
+          const painel = new PIXI.Graphics();
+
+          painel.beginFill(0x273142);
+          painel.lineStyle(2, 0x56627A);
+          painel.drawRoundedRect(
+              340, 100, 600, 520, 18
+          );
+          painel.endFill();
+
+          this.addChild(painel);
+
+          // ===== TITULO =====
+
+          criarTexto(
+              'GAME OVER',
+              56,
+              0xF87171,
+              640, 175
+          );
+
+          criarTexto(
+              'A NOITE VENCEU DESTA VEZ...',
+              20,
+              0xCBD5E1,
+              640, 230
+          );
+
+          // ===== RESULTADOS =====
+
+          criarTexto(
+              'PONTUACAO: ' + resultado.pontos,
+              28,
+              0xFFFFFF,
+              640, 305
+          );
+
+          criarTexto(
+              'RECORDE: ' + resultado.recorde,
+              26,
+              0xFACC15,
+              640, 355
+          );
+
+          criarTexto(
+              'ONDA ALCANCADA: ' + resultado.onda,
+              22,
+              0xCBD5E1,
+              640, 405
+          );
+
+          // ===== FUNCAO PARA CRIAR BOTOES =====
+
+          const criarBotao = (nome, y, acao) => {
+
+              const botao = new PIXI.Container();
+
+              botao.x = 460;
+              botao.y = y;
+
+              const fundo = new PIXI.Graphics();
+
+              fundo.beginFill(0x315F83);
+              fundo.drawRoundedRect(
+                  0, 0, 360, 54, 9
+              );
+              fundo.endFill();
+
+              botao.addChild(fundo);
+
+              const texto = new PIXI.Text(nome, {
+                  fontFamily: 'Arial',
+                  fontSize: 20,
+                  fontWeight: 'bold',
+                  fill: 0xFFFFFF
+              });
+
+              texto.anchor.set(0.5);
+              texto.x = 180;
+              texto.y = 27;
+
+              botao.addChild(texto);
+
+              // Interacao com o mouse
+              botao.eventMode = 'static';
+              botao.cursor = 'pointer';
+
+              botao.hitArea = new PIXI.Rectangle(
+                  0, 0, 360, 54
+              );
+
+              botao.on('pointertap', acao);
+
+              this.addChild(botao);
+
+              return botao;
+          };
+
+          // ===== BOTOES =====
+
+          criarBotao(
+              'JOGAR NOVAMENTE',
+              465,
+              () => rooms.switch('rm_jogo')
+          );
+
+          criarBotao(
+              'MENU PRINCIPAL',
+              535,
+              () => rooms.switch('rm_menu')
+          );
+        arguments: {}
+        lib: core
+    extends:
+      cgroup: ''
+      'editor:myCollidingCGroups': []
+    lastmod: 1794437839114
+    uid: RK69R3ddKhKp9f
+    behaviors: []
+    extendTypes: ''
+    defaultText: ''
+    textStyle: 2KWWMJk43hLqWJ
+  - lastmod: 1794485786624
+    type: texture
+    name: Soldado
+    untill: 4
+    grid:
+      - 4
+      - 1
+    axis:
+      - 271
+      - 362
+    marginx: 0
+    marginy: 0
+    imgWidth: 2172
+    imgHeight: 724
+    width: 543
+    height: 724
+    offx: 0
+    offy: 0
+    origname: iG365f6kHR8KwP8.png
+    shape: strip
+    left: 125
+    right: 126
+    top: 700
+    bottom: -40
+    uid: G365f6kHR8KwP8
+    padding: 1
+    isBlank: false
+    source: 'C:\Users\sett2\ct.js\Projects\UltimaNoite\UltimaNoite\img\Soldado.png'
+    r: 271
+    stripPoints:
+      - x: 5
+        'y': -346
+      - x: 127
+        'y': -69
+      - x: 79
+        'y': 325
+      - x: -77
+        'y': 322
+      - x: -145
+        'y': -67
+    closedStrip: true
+  - lastmod: 1794486165474
+    type: texture
+    name: Zumbi
+    untill: 0
+    grid:
+      - 4
+      - 1
+    axis:
+      - 271
+      - 362
+    marginx: 0
+    marginy: 0
+    imgWidth: 2172
+    imgHeight: 724
+    width: 543
+    height: 724
+    offx: 0
+    offy: 0
+    origname: ig4J3wD789fdHjC.png
+    shape: strip
+    left: 0
+    right: 2172
+    top: 0
+    bottom: 724
+    uid: g4J3wD789fdHjC
+    padding: 1
+    isBlank: false
+    source: 'C:\Users\sett2\ct.js\Projects\UltimaNoite\UltimaNoite\img\Zumbi.png'
+    stripPoints:
+      - x: 0
+        'y': -360
+      - x: 187
+        'y': -210
+      - x: 180
+        'y': 308
+      - x: -163
+        'y': 309
+      - x: -170
+        'y': -219
+    closedStrip: true
 globalVars: []
 settings:
   authoring:
