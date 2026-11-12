@@ -52,6 +52,10 @@ actions:
     methods:
       - code: keyboard.Digit0
       - code: keyboard.Numpad0
+  - name: Pausar
+    methods:
+      - code: keyboard.KeyP
+      - code: keyboard.Escape
 scripts: []
 assets:
   - type: room
@@ -124,7 +128,7 @@ assets:
         bindings: {}
     tiles: []
     extends: {}
-    lastmod: 1794487175426
+    lastmod: 1794488396613
     events: []
     behaviors: []
     extendTypes: ''
@@ -285,8 +289,14 @@ assets:
     events:
       - eventKey: OnStep
         lib: core
-        code: |
+        code: |+
 
+          if (rooms.current.paused) {
+              this.hspeed = 0;
+              this.vspeed = 0;
+              return;
+          }
+            
           /* ==========================================
              ULTIMA NOITE - JOGADOR
              EVENTO: NO INICIO DO QUADRO
@@ -435,6 +445,25 @@ assets:
                   this.animando = false;
               }
           }
+
+          // ===== ATUALIZAR EFEITO DE DANO =====
+
+          const agoraVisual = Date.now();
+
+          if (agoraVisual < this.piscarAte) {
+
+              // Alterna vermelho e normal
+              const fase = Math.floor(agoraVisual / 70) % 2;
+
+              this.tint = fase === 0
+                  ? 0xFF5555
+                  : 0xFFFFFF;
+
+          } else {
+
+              this.tint = 0xFFFFFF;
+          }
+
         arguments: {}
       - eventKey: OnCreate
         code: |
@@ -499,12 +528,19 @@ assets:
               'Dano:', this.dano,
               'Velocidade:', this.velocidade
           );
+
+          // ===== FEEDBACK DE DANO =====
+
+          this.tint = 0xFFFFFF;
+
+          this.piscarAte = 0;
+          this.duracaoPiscar = 180;
         arguments: {}
         lib: core
     extends:
       cgroup: ''
       'editor:myCollidingCGroups': []
-    lastmod: 1794485924217
+    lastmod: 1794487529641
     uid: 489p9JKMb6NGWT
     behaviors: []
     extendTypes: ''
@@ -522,6 +558,12 @@ assets:
         lib: core
         code: |
 
+          if (rooms.current.paused) {
+              this.hspeed = 0;
+              this.vspeed = 0;
+              return;
+          }
+            
           /* ==========================================
              ULTIMA NOITE - ZUMBI
              EVENTO: NO INICIO DO QUADRO
@@ -734,6 +776,10 @@ assets:
                           jogador.vida - this.dano
                       );
 
+                  // Faz o soldado piscar ao receber dano
+                  jogador.piscarAte =
+                      Date.now() + jogador.duracaoPiscar;
+
                       this.ultimoAtaque = agora;
 
                       console.log(
@@ -751,6 +797,25 @@ assets:
 
               this.hspeed = 0;
               this.vspeed = 0;
+          }
+
+          // ===== ATUALIZAR EFEITO DE DANO =====
+
+          const agoraVisualZumbi = Date.now();
+
+          if (agoraVisualZumbi < this.piscarAte) {
+
+              const fase = Math.floor(
+                  agoraVisualZumbi / 70
+              ) % 2;
+
+              this.tint = fase === 0
+                  ? 0xFF5555
+                  : 0xFFFFFF;
+
+          } else {
+
+              this.tint = 0xFFFFFF;
           }
         arguments: {}
       - eventKey: OnCreate
@@ -811,6 +876,13 @@ assets:
           // ===== ROTACAO =====
 
           this.angle = 0;
+
+          // ===== FEEDBACK VISUAL DE DANO =====
+
+          this.tint = 0xFFFFFF;
+
+          this.piscarAte = 0;
+          this.duracaoPiscar = 180;
         arguments: {}
         lib: core
     extends:
@@ -834,6 +906,10 @@ assets:
         lib: core
         code: |
 
+          if (rooms.current.paused) {
+              return;
+          }
+            
           /* ===== MOVIMENTAÇÃO ===== */
 
           this.angle = this.direction;
@@ -851,6 +927,11 @@ assets:
           ) {
               // Aplica dano
               zumbi.vida -= this.dano;
+
+          // Ativa o feedback de dano
+          zumbi.piscarAte =
+              Date.now() + zumbi.duracaoPiscar;
+
 
               console.log(
                   'Zumbi atingido! Vida:',
@@ -954,7 +1035,7 @@ assets:
     extends:
       cgroup: ''
       'editor:myCollidingCGroups': []
-    lastmod: 1794422540771
+    lastmod: 1794487529655
     uid: bThjTDTzGtRMcm
     behaviors: []
     extendTypes: ''
@@ -992,8 +1073,18 @@ assets:
         lib: core
         code: |
 
-          // A HUD e atualizada no evento
-          // No final do quadro.
+          /* ==========================================
+             ULTIMA NOITE - CONTROLE DE PAUSA
+             HUD - NO INICIO DO QUADRO
+          ========================================== */
+
+          // Verifica se a acao de pausa existe
+          if (
+              actions.Pausar &&
+              actions.Pausar.pressed
+          ) {
+              this.alternarPausa();
+          }
         arguments: {}
       - eventKey: OnDraw
         code: |
@@ -1609,6 +1700,364 @@ assets:
 
           // Posicao acima dos zumbis
           this.deslocamentoBarraZumbi = 43;
+
+
+          /* ==========================================
+             ULTIMA NOITE - TELA DE PAUSA
+             HUD - CRIACAO
+          ========================================== */
+
+          // Estado inicial
+          rooms.current.paused = false;
+
+          // Guarda o instante em que pausou
+          this.inicioPausa = 0;
+
+          // Guarda velocidades das animacoes
+          this.animacoesPausadas = [];
+
+          // ==========================================
+          // CAMADA VISUAL
+          // ==========================================
+
+          this.telaPausa = new PIXI.Container();
+          this.addChild(this.telaPausa);
+
+          // Fundo escuro cobrindo a arena
+          const fundoPausa = new PIXI.Graphics();
+
+          fundoPausa.beginFill(0x080D17, 0.92);
+          fundoPausa.drawRect(
+              -25, -25, 1280, 720
+          );
+          fundoPausa.endFill();
+
+          // Bloqueia cliques na arena
+          fundoPausa.eventMode = 'static';
+          fundoPausa.hitArea = new PIXI.Rectangle(
+              -25, -25, 1280, 720
+          );
+
+          this.telaPausa.addChild(fundoPausa);
+
+          // ==========================================
+          // PAINEL CENTRAL
+          // ==========================================
+
+          const painelPausa = new PIXI.Graphics();
+
+          painelPausa.lineStyle(2, 0x536985);
+          painelPausa.beginFill(0x252E3D);
+
+          painelPausa.drawRoundedRect(
+              340, 145, 550, 440, 18
+          );
+
+          painelPausa.endFill();
+          this.telaPausa.addChild(painelPausa);
+
+          // ==========================================
+          // FUNCAO PARA CRIAR TEXTOS
+          // ==========================================
+
+          const criarTextoPausa = (
+              conteudo, tamanho, cor, x, y
+          ) => {
+
+              const txt = new PIXI.Text(conteudo, {
+                  fontFamily: 'Arial',
+                  fontSize: tamanho,
+                  fontWeight: 'bold',
+                  fill: cor,
+                  align: 'center'
+              });
+
+              txt.anchor.set(0.5);
+              txt.x = x;
+              txt.y = y;
+
+              this.telaPausa.addChild(txt);
+
+              return txt;
+          };
+
+          // ==========================================
+          // TITULO E DESCRICAO
+          // ==========================================
+
+          criarTextoPausa(
+              'JOGO PAUSADO',
+              42,
+              0xFFFFFF,
+              615, 230
+          );
+
+          criarTextoPausa(
+              'SUA SOBREVIVENCIA ESTA EM ESPERA',
+              17,
+              0xB9C5D5,
+              615, 290
+          );
+
+          criarTextoPausa(
+              'PRESSIONE P OU ESC PARA CONTINUAR',
+              17,
+              0xAEB9CB,
+              615, 540
+          );
+
+          // ==========================================
+          // FUNCAO PARA CRIAR BOTOES
+          // ==========================================
+
+          const criarBotaoPausa = (
+              nome, y, acao, cor = 0x315F83
+          ) => {
+
+              const botao = new PIXI.Container();
+
+              botao.x = 435;
+              botao.y = y;
+
+              const fundo = new PIXI.Graphics();
+
+              fundo.beginFill(cor);
+              fundo.drawRoundedRect(
+                  0, 0, 360, 58, 10
+              );
+              fundo.endFill();
+
+              botao.addChild(fundo);
+
+              const txt = new PIXI.Text(nome, {
+                  fontFamily: 'Arial',
+                  fontSize: 21,
+                  fontWeight: 'bold',
+                  fill: 0xFFFFFF
+              });
+
+              txt.anchor.set(0.5);
+              txt.x = 180;
+              txt.y = 29;
+
+              botao.addChild(txt);
+
+              botao.eventMode = 'static';
+              botao.cursor = 'pointer';
+
+              botao.hitArea = new PIXI.Rectangle(
+                  0, 0, 360, 58
+              );
+
+              botao.on('pointertap', acao);
+
+              this.telaPausa.addChild(botao);
+
+              return botao;
+          };
+
+          // ==========================================
+          // CONGELAR ANIMACOES
+          // ==========================================
+
+          this.congelarAnimacoes = () => {
+
+              this.animacoesPausadas = [];
+
+              const tipos = ['Jogador', 'Zumbi'];
+
+              for (const tipo of tipos) {
+
+                  const objetos =
+                      templates.list[tipo] || [];
+
+                  for (const objeto of objetos) {
+
+                      if (!templates.valid(objeto)) {
+                          continue;
+                      }
+
+                      this.animacoesPausadas.push({
+                          objeto: objeto,
+                          velocidade: objeto.animationSpeed
+                      });
+
+                      objeto.animationSpeed = 0;
+                  }
+              }
+          };
+
+          // ==========================================
+          // RESTAURAR ANIMACOES
+          // ==========================================
+
+          this.restaurarAnimacoes = () => {
+
+              for (const item of this.animacoesPausadas) {
+
+                  if (!templates.valid(item.objeto)) {
+                      continue;
+                  }
+
+                  item.objeto.animationSpeed =
+                      item.velocidade;
+              }
+
+              this.animacoesPausadas = [];
+          };
+
+          // ==========================================
+          // PAUSAR PARTIDA
+          // ==========================================
+
+          this.pausarJogo = () => {
+
+              if (rooms.current.paused) {
+                  return;
+              }
+
+              // Guarda o horario
+              this.inicioPausa = Date.now();
+
+              // Bloqueia logica do jogo
+              rooms.current.paused = true;
+
+              // Congela sprites animados
+              this.congelarAnimacoes();
+
+              // Mostra tela de pausa
+              this.telaPausa.visible = true;
+
+              console.log('JOGO PAUSADO');
+          };
+
+          // ==========================================
+          // CONTINUAR PARTIDA
+          // ==========================================
+
+          this.continuarJogo = () => {
+
+              if (!rooms.current.paused) {
+                  return;
+              }
+
+              // Tempo real que ficou pausado
+              const duracaoPausa =
+                  Date.now() - this.inicioPausa;
+
+              // Compensa temporizadores das ondas
+              const gerenciadores =
+                  templates.list['GerenciadorOndas'] || [];
+
+              for (const g of gerenciadores) {
+
+                  if (!templates.valid(g)) {
+                      continue;
+                  }
+
+                  if (g.proximaOndaEm) {
+                      g.proximaOndaEm += duracaoPausa;
+                  }
+
+                  if (g.inicioOndaEm) {
+                      g.inicioOndaEm += duracaoPausa;
+                  }
+              }
+
+              // Compensa temporizadores dos zumbis
+              const zumbis =
+                  templates.list['Zumbi'] || [];
+
+              for (const zumbi of zumbis) {
+
+                  if (!templates.valid(zumbi)) {
+                      continue;
+                  }
+
+                  if (zumbi.ultimoAtaque) {
+                      zumbi.ultimoAtaque += duracaoPausa;
+                  }
+
+                  if (zumbi.piscarAte) {
+                      zumbi.piscarAte += duracaoPausa;
+                  }
+              }
+
+              // Compensa feedback do jogador
+              const jogadores =
+                  templates.list['Jogador'] || [];
+
+              for (const jogador of jogadores) {
+
+                  if (!templates.valid(jogador)) {
+                      continue;
+                  }
+
+                  if (jogador.piscarAte) {
+                      jogador.piscarAte += duracaoPausa;
+                  }
+              }
+
+              // Restaura a animacao dos personagens
+              this.restaurarAnimacoes();
+
+              // Reabilita a partida
+              rooms.current.paused = false;
+
+              // Esconde painel
+              this.telaPausa.visible = false;
+
+              console.log('JOGO RETOMADO');
+          };
+
+          // ==========================================
+          // ALTERNAR PAUSA
+          // ==========================================
+
+          this.alternarPausa = () => {
+
+              if (rooms.current.paused) {
+                  this.continuarJogo();
+              } else {
+                  this.pausarJogo();
+              }
+          };
+
+          // ==========================================
+          // VOLTAR AO MENU
+          // ==========================================
+
+          this.voltarMenuPausa = () => {
+
+              this.restaurarAnimacoes();
+
+              // Garante que o novo jogo nao inicie pausado
+              rooms.current.paused = false;
+
+              this.telaPausa.visible = false;
+
+              rooms.switch('rm_menu');
+          };
+
+          // ==========================================
+          // BOTOES
+          // ==========================================
+
+          criarBotaoPausa(
+              'CONTINUAR',
+              350,
+              () => this.continuarJogo()
+          );
+
+          criarBotaoPausa(
+              'MENU PRINCIPAL',
+              430,
+              () => this.voltarMenuPausa(),
+              0x354154
+          );
+
+          // Inicia com o painel escondido
+          this.telaPausa.visible = false;
         arguments: {}
         lib: core
     extends:
@@ -1634,6 +2083,10 @@ assets:
         lib: core
         code: |-
 
+          if (rooms.current.paused) {
+              return;
+          }
+            
           const agora = Date.now();
 
           const jogadores = templates.list['Jogador'] || [];
@@ -1942,7 +2395,7 @@ assets:
     extends:
       cgroup: ''
       'editor:myCollidingCGroups': []
-    lastmod: 1794423860843
+    lastmod: 1794488232183
     uid: j1P8f6c1cnnn97
     behaviors: []
     extendTypes: ''
@@ -1962,6 +2415,10 @@ assets:
         lib: core
         code: |
 
+          if (rooms.current.paused) {
+              return;
+          }
+            
           if (this.coletado) {
               return;
           }
@@ -2019,7 +2476,7 @@ assets:
     extends:
       cgroup: ''
       'editor:myCollidingCGroups': []
-    lastmod: 1794422540772
+    lastmod: 1794488232179
     uid: w5GfBKFnqBKKqB
     behaviors: []
     extendTypes: ''
@@ -2037,6 +2494,10 @@ assets:
         lib: core
         code: |
 
+          if (rooms.current.paused) {
+              return;
+          }
+            
           if (this.coletada) {
               return;
           }
@@ -2126,7 +2587,7 @@ assets:
       cgroup: circular
       'editor:myCollidingCGroups':
         - ''
-    lastmod: 1794423465405
+    lastmod: 1794488232177
     uid: J85nHDQdmCR3kq
     behaviors: []
     extendTypes: ''
@@ -2177,7 +2638,7 @@ assets:
         bindings: {}
     tiles: []
     extends: {}
-    lastmod: 1794487175467
+    lastmod: 1794488396665
     events: []
     behaviors: []
     extendTypes: ''
@@ -2433,7 +2894,7 @@ assets:
         bindings: {}
     tiles: []
     extends: {}
-    lastmod: 1794487175513
+    lastmod: 1794488396795
     events: []
     behaviors: []
     extendTypes: ''
