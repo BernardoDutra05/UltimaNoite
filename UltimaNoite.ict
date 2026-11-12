@@ -65,8 +65,8 @@ assets:
     onleave: ''
     gridX: 64
     gridY: 64
-    diagonalGrid: false
-    disableGrid: false
+    diagonalGrid: true
+    disableGrid: true
     simulate: true
     width: 1280
     height: 720
@@ -92,13 +92,13 @@ assets:
         scaleY: 1
         repeat: repeat
     copies:
-      - x: 640
-        'y': 384
+      - x: 668.99993582
+        'y': 395.53942871
         opacity: 1
         tint: 16777215
         scale:
-          x: 1
-          'y': 1
+          x: 0.14705906
+          'y': 0.18359274
         rotation: 0
         uid: 489p9JKMb6NGWT
         exts: {}
@@ -107,23 +107,8 @@ assets:
         customSize: !<tag:yaml.org,2002:js/undefined> ''
         customWordWrap: !<tag:yaml.org,2002:js/undefined> ''
         bindings: {}
-      - x: 192
-        'y': 64
-        opacity: 1
-        tint: 16777215
-        scale:
-          x: 1
-          'y': 1
-        rotation: 0
-        uid: 1bqjJwgwt7pWJ3
-        exts: {}
-        customProperties: {}
-        customText: !<tag:yaml.org,2002:js/undefined> ''
-        customSize: !<tag:yaml.org,2002:js/undefined> ''
-        customWordWrap: !<tag:yaml.org,2002:js/undefined> ''
-        bindings: {}
-      - x: 256
-        'y': 192
+      - x: 0
+        'y': 0
         opacity: 1
         tint: 16777215
         scale:
@@ -137,9 +122,84 @@ assets:
         customSize: !<tag:yaml.org,2002:js/undefined> ''
         customWordWrap: !<tag:yaml.org,2002:js/undefined> ''
         bindings: {}
+      - x: 0
+        'y': -0.0
+        opacity: 1
+        tint: 16777215
+        scale:
+          x: 1
+          'y': 1
+        rotation: 0
+        uid: 1bqjJwgwt7pWJ3
+        exts: {}
+        customProperties: {}
+        customText: !<tag:yaml.org,2002:js/undefined> ''
+        customSize: !<tag:yaml.org,2002:js/undefined> ''
+        customWordWrap: !<tag:yaml.org,2002:js/undefined> ''
+        bindings: {}
+      - x: 400.80800271
+        'y': 72.14923782
+        opacity: 1
+        tint: 16777215
+        scale:
+          x: 25.06857251
+          'y': 4.59443326
+        rotation: 0
+        uid: h961925Nwm5qNb
+        exts: {}
+        customProperties: {}
+        customText: !<tag:yaml.org,2002:js/undefined> ''
+        customSize: !<tag:yaml.org,2002:js/undefined> ''
+        customWordWrap: !<tag:yaml.org,2002:js/undefined> ''
+        bindings: {}
+      - x: 208.40516283
+        'y': 633.83435843
+        opacity: 1
+        tint: 16777215
+        scale:
+          x: 12.921875
+          'y': 5.1640625
+        rotation: 0
+        uid: h961925Nwm5qNb
+        exts: {}
+        customProperties: {}
+        customText: !<tag:yaml.org,2002:js/undefined> ''
+        customSize: !<tag:yaml.org,2002:js/undefined> ''
+        customWordWrap: !<tag:yaml.org,2002:js/undefined> ''
+        bindings: {}
+      - x: 1159.40907563
+        'y': 605.00848628
+        opacity: 1
+        tint: 16777215
+        scale:
+          x: 5.04159555
+          'y': 2.27930403
+        rotation: 1.9127041296724214
+        uid: h961925Nwm5qNb
+        exts: {}
+        customProperties: {}
+        customText: !<tag:yaml.org,2002:js/undefined> ''
+        customSize: !<tag:yaml.org,2002:js/undefined> ''
+        customWordWrap: !<tag:yaml.org,2002:js/undefined> ''
+        bindings: {}
+      - x: 171.23914199
+        'y': 281.26027222
+        opacity: 1
+        tint: 16777215
+        scale:
+          x: 6.26558416
+          'y': 2.36704644
+        rotation: 0.4014257279586958
+        uid: h961925Nwm5qNb
+        exts: {}
+        customProperties: {}
+        customText: !<tag:yaml.org,2002:js/undefined> ''
+        customSize: !<tag:yaml.org,2002:js/undefined> ''
+        customWordWrap: !<tag:yaml.org,2002:js/undefined> ''
+        bindings: {}
     tiles: []
     extends: {}
-    lastmod: 1794509597660
+    lastmod: 1794514132953
     events: []
     behaviors: []
     extendTypes: ''
@@ -359,8 +419,7 @@ assets:
               this.vspeed = 0;
           }
 
-          // Aplica o movimento
-          this.move();
+          this.moveSmart('CenarioSolido');
 
 
           // ==========================================
@@ -554,7 +613,7 @@ assets:
     extends:
       cgroup: ''
       'editor:myCollidingCGroups': []
-    lastmod: 1794487529641
+    lastmod: 1794510728626
     uid: 489p9JKMb6NGWT
     behaviors: []
     extendTypes: ''
@@ -572,288 +631,562 @@ assets:
         lib: core
         code: |
 
+          /* ==========================================
+             ULTIMA NOITE - ZUMBI
+             NO INICIO DO QUADRO
+
+             PAUSA
+             MORTE ANIMADA
+             PATHFINDING
+             SEPARACAO
+             COLISAO
+             ATAQUE
+             FEEDBACK DE DANO
+          ========================================== */
+
+          // ==========================================
+          // 1. PAUSA
+          // ==========================================
+
           if (rooms.current.paused) {
               this.hspeed = 0;
               this.vspeed = 0;
               return;
           }
 
-          /* ==========================================
-             ANIMACAO DE MORTE DO ZUMBI
-          ========================================== */
+          // ==========================================
+          // 2. ANIMACAO DE MORTE
+          // ==========================================
 
           if (this.morrendo) {
 
-              // Para completamente
               this.hspeed = 0;
               this.vspeed = 0;
-
-              // Congela a animacao de caminhada
               this.animationSpeed = 0;
 
-              // Avanca o tempo da morte
               this.tempoMorte += u.time;
 
-              // Progresso entre 0 e 1
               const progresso = Math.min(
                   1,
                   this.tempoMorte / this.duracaoMorte
               );
 
-              // Inclina o corpo gradualmente
               this.angle =
                   this.anguloInicialMorte +
                   progresso * 75;
 
-              // Diminui a opacidade
               this.alpha = 1 - progresso;
 
-              // Encolhe levemente durante a queda
-              const escala = 0.08 * (
-                  1 - progresso * 0.25
-              );
+              const escala =
+                  0.08 * (1 - progresso * 0.25);
 
               this.scale.set(escala);
 
-              // Remove somente ao terminar
               if (progresso >= 1) {
                   this.kill = true;
               }
 
               return;
           }
-            
-          /* ==========================================
-             ULTIMA NOITE - ZUMBI
-             EVENTO: NO INICIO DO QUADRO
 
-             PERSEGUICAO
-             SEPARACAO
-             ATAQUE
-             ROTACAO
-          ========================================== */
+          // ==========================================
+          // 3. BUSCAR JOGADOR
+          // ==========================================
 
-          // ===== BUSCAR JOGADOR =====
-
-          const jogadores = templates.list['Jogador'] || [];
+          const jogadores =
+              templates.list['Jogador'] || [];
 
           const jogador = jogadores.find(
               j => templates.valid(j)
           );
 
-          // ===== BUSCAR OUTROS ZUMBIS =====
+          if (!jogador || jogador.vida <= 0) {
+              this.hspeed = 0;
+              this.vspeed = 0;
+              return;
+          }
+
+          // ==========================================
+          // 4. CONFIGURACOES DE NAVEGACAO
+          // ==========================================
+
+          const tamanhoCelula = 32;
+
+          const colunas = Math.ceil(
+              1280 / tamanhoCelula
+          );
+
+          const linhas = Math.ceil(
+              720 / tamanhoCelula
+          );
+
+          const indice = (x, y) =>
+              y * colunas + x;
+
+          const dentro = (x, y) =>
+              x >= 0 &&
+              y >= 0 &&
+              x < colunas &&
+              y < linhas;
+
+          const celulaX = x =>
+              Math.max(
+                  0,
+                  Math.min(
+                      colunas - 1,
+                      Math.floor(x / tamanhoCelula)
+                  )
+              );
+
+          const celulaY = y =>
+              Math.max(
+                  0,
+                  Math.min(
+                      linhas - 1,
+                      Math.floor(y / tamanhoCelula)
+                  )
+              );
+
+          // Direcoes permitidas
+          const direcoes = [
+              [1, 0],
+              [-1, 0],
+              [0, 1],
+              [0, -1],
+              [1, 1],
+              [1, -1],
+              [-1, 1],
+              [-1, -1]
+          ];
+
+          // ==========================================
+          // 5. GERAR MAPA DE CAMINHOS COMPARTILHADO
+          // ==========================================
+
+          // Todos os zumbis utilizam o mesmo mapa.
+          // O mapa e recalculado periodicamente.
+
+          const sala = rooms.current;
+
+          const agora = Date.now();
+
+          const alvoX = celulaX(jogador.x);
+          const alvoY = celulaY(jogador.y);
+
+          const cache = sala.mapaNavegacaoZumbis;
+
+          const precisaAtualizar =
+              !cache ||
+              agora - cache.atualizadoEm > 450 ||
+              cache.alvoX !== alvoX ||
+              cache.alvoY !== alvoY;
+
+          if (precisaAtualizar) {
+
+              const total = colunas * linhas;
+
+              // true = area livre
+              const livre = new Uint8Array(total);
+
+              livre.fill(1);
+
+              // Obstaculos colocados na Room
+              const obstaculos = (
+                  templates.list['Obstaculo'] || []
+              ).filter(
+                  o => templates.valid(o) && !o.kill
+              );
+
+              // Margem de seguranca ao redor
+              // dos objetos do cenario
+              const margem = 24;
+
+              for (const obstaculo of obstaculos) {
+
+                  // Retangulo real da instancia
+                  const bounds = obstaculo.getBounds();
+
+                  const esquerda =
+                      bounds.x - margem;
+
+                  const direita =
+                      bounds.x + bounds.width + margem;
+
+                  const topo =
+                      bounds.y - margem;
+
+                  const baixo =
+                      bounds.y + bounds.height + margem;
+
+                  // Bloqueia apenas celulas cujos
+                  // centros estao dentro da area
+                  // ocupada pelo obstaculo.
+
+                  const minX = celulaX(esquerda);
+                  const maxX = celulaX(direita);
+
+                  const minY = celulaY(topo);
+                  const maxY = celulaY(baixo);
+
+                  for (
+                      let gy = minY;
+                      gy <= maxY;
+                      gy++
+                  ) {
+                      for (
+                          let gx = minX;
+                          gx <= maxX;
+                          gx++
+                      ) {
+
+                          const centroX =
+                              gx * tamanhoCelula +
+                              tamanhoCelula / 2;
+
+                          const centroY =
+                              gy * tamanhoCelula +
+                              tamanhoCelula / 2;
+
+                          if (
+                              centroX >= esquerda &&
+                              centroX <= direita &&
+                              centroY >= topo &&
+                              centroY <= baixo
+                          ) {
+                              livre[indice(gx, gy)] = 0;
+                          }
+                      }
+                  }
+              }
+
+              // Distancia de cada celula ao jogador
+              const distancias = new Int32Array(total);
+
+              distancias.fill(-1);
+
+              // Busca em largura a partir do jogador
+              const fila = [];
+
+              let inicioFila = 0;
+
+              let origemX = alvoX;
+              let origemY = alvoY;
+
+              // Se o alvo estiver em uma celula
+              // bloqueada, procura a livre mais perto.
+              if (!livre[indice(origemX, origemY)]) {
+
+                  let melhorDistancia = Infinity;
+
+                  for (let y = 0; y < linhas; y++) {
+                      for (let x = 0; x < colunas; x++) {
+
+                          if (!livre[indice(x, y)]) {
+                              continue;
+                          }
+
+                          const d =
+                              (x - alvoX) ** 2 +
+                              (y - alvoY) ** 2;
+
+                          if (d < melhorDistancia) {
+                              melhorDistancia = d;
+                              origemX = x;
+                              origemY = y;
+                          }
+                      }
+                  }
+              }
+
+              const origem = indice(
+                  origemX,
+                  origemY
+              );
+
+              if (livre[origem]) {
+
+                  distancias[origem] = 0;
+
+                  fila.push([origemX, origemY]);
+              }
+
+              // ===== CALCULAR CAMINHOS =====
+
+              while (inicioFila < fila.length) {
+
+                  const atual = fila[inicioFila++];
+
+                  const x = atual[0];
+                  const y = atual[1];
+
+                  const distanciaAtual =
+                      distancias[indice(x, y)];
+
+                  for (const direcao of direcoes) {
+
+                      const nx = x + direcao[0];
+                      const ny = y + direcao[1];
+
+                      if (!dentro(nx, ny)) {
+                          continue;
+                      }
+
+                      const ni = indice(nx, ny);
+
+                      if (
+                          !livre[ni] ||
+                          distancias[ni] !== -1
+                      ) {
+                          continue;
+                      }
+
+                      // Impede atravessar os cantos
+                      // de obstaculos na diagonal.
+                      if (
+                          direcao[0] !== 0 &&
+                          direcao[1] !== 0
+                      ) {
+
+                          const lado1 = indice(
+                              x + direcao[0],
+                              y
+                          );
+
+                          const lado2 = indice(
+                              x,
+                              y + direcao[1]
+                          );
+
+                          if (
+                              !livre[lado1] ||
+                              !livre[lado2]
+                          ) {
+                              continue;
+                          }
+                      }
+
+                      distancias[ni] =
+                          distanciaAtual + 1;
+
+                      fila.push([nx, ny]);
+                  }
+              }
+
+              // Salva o mapa para os demais zumbis
+              sala.mapaNavegacaoZumbis = {
+                  atualizadoEm: agora,
+                  alvoX,
+                  alvoY,
+                  livre,
+                  distancias
+              };
+          }
+
+          // ==========================================
+          // 6. ESCOLHER DIRECAO DE CAMINHADA
+          // ==========================================
+
+          const mapa = sala.mapaNavegacaoZumbis;
+
+          const dx = jogador.x - this.x;
+          const dy = jogador.y - this.y;
+
+          const distanciaJogador =
+              Math.hypot(dx, dy);
+
+          let moverX = 0;
+          let moverY = 0;
+
+          if (distanciaJogador > 20) {
+
+              // Direcao direta como alternativa
+              moverX = dx / distanciaJogador;
+              moverY = dy / distanciaJogador;
+
+              const zx = celulaX(this.x);
+              const zy = celulaY(this.y);
+
+              const atual = indice(zx, zy);
+
+              const distanciaAtual =
+                  mapa.distancias[atual];
+
+              let melhorX = -1;
+              let melhorY = -1;
+
+              let melhorDistancia = Infinity;
+              let melhorProximidade = Infinity;
+
+              // Seleciona uma celula vizinha
+              // que aproxime o zumbi do jogador.
+              for (const direcao of direcoes) {
+
+                  const nx = zx + direcao[0];
+                  const ny = zy + direcao[1];
+
+                  if (!dentro(nx, ny)) {
+                      continue;
+                  }
+
+                  const ni = indice(nx, ny);
+
+                  const dMapa = mapa.distancias[ni];
+
+                  if (
+                      !mapa.livre[ni] ||
+                      dMapa < 0
+                  ) {
+                      continue;
+                  }
+
+                  // Evita cortar caminho na diagonal
+                  if (
+                      direcao[0] !== 0 &&
+                      direcao[1] !== 0
+                  ) {
+                      if (
+                          !mapa.livre[
+                              indice(zx + direcao[0], zy)
+                          ] ||
+                          !mapa.livre[
+                              indice(zx, zy + direcao[1])
+                          ]
+                      ) {
+                          continue;
+                      }
+                  }
+
+                  const destinoX =
+                      (nx + 0.5) * tamanhoCelula;
+
+                  const destinoY =
+                      (ny + 0.5) * tamanhoCelula;
+
+                  const proximidade = Math.hypot(
+                      destinoX - this.x,
+                      destinoY - this.y
+                  );
+
+                  // Prefere caminhos que reduzem a
+                  // distancia ate o jogador.
+                  const caminhoValido =
+                      distanciaAtual < 0 ||
+                      dMapa < distanciaAtual;
+
+                  if (
+                      caminhoValido &&
+                      (
+                          dMapa < melhorDistancia ||
+                          (
+                              dMapa === melhorDistancia &&
+                              proximidade < melhorProximidade
+                          )
+                      )
+                  ) {
+                      melhorDistancia = dMapa;
+                      melhorProximidade = proximidade;
+                      melhorX = destinoX;
+                      melhorY = destinoY;
+                  }
+              }
+
+              if (melhorX >= 0) {
+
+                  this.destinoNavegacaoX = melhorX;
+                  this.destinoNavegacaoY = melhorY;
+
+                  const caminhoX =
+                      melhorX - this.x;
+
+                  const caminhoY =
+                      melhorY - this.y;
+
+                  const distanciaCaminho =
+                      Math.hypot(caminhoX, caminhoY);
+
+                  if (distanciaCaminho > 1) {
+
+                      moverX =
+                          caminhoX / distanciaCaminho;
+
+                      moverY =
+                          caminhoY / distanciaCaminho;
+
+                      this.usandoCaminho = true;
+                  }
+              } else {
+                  this.usandoCaminho = false;
+              }
+          }
+
+          // ==========================================
+          // 7. SEPARACAO ENTRE ZUMBIS
+          // ==========================================
 
           const zumbis = (
               templates.list['Zumbi'] || []
           ).filter(
               z => templates.valid(z) &&
                    !z.kill &&
+                   !z.morrendo &&
                    z.vida > 0
           );
 
-          // ===== MOVIMENTACAO =====
+          let separarX = 0;
+          let separarY = 0;
 
-          let moverX = 0;
-          let moverY = 0;
+          for (const outro of zumbis) {
+
+              if (outro === this) {
+                  continue;
+              }
+
+              const ox = this.x - outro.x;
+              const oy = this.y - outro.y;
+
+              const d = Math.hypot(ox, oy);
+
+              if (
+                  d > 0 &&
+                  d < this.raioDeteccao
+              ) {
+
+                  const intensidade =
+                      (this.raioDeteccao - d) /
+                      this.raioDeteccao;
+
+                  separarX +=
+                      (ox / d) * intensidade;
+
+                  separarY +=
+                      (oy / d) * intensidade;
+              }
+          }
+
+          // Aplica uma separacao mais suave.
+          // Isso evita desviar o zumbi de sua rota.
+          moverX += separarX * 0.25;
+          moverY += separarY * 0.25;
+
+          // ==========================================
+          // 8. APLICAR MOVIMENTO
+          // ==========================================
+
+          const tamanho =
+              Math.hypot(moverX, moverY);
 
           if (
-              jogador &&
-              jogador.vida > 0 &&
-              this.vida > 0
+              tamanho > 0 &&
+              distanciaJogador > 20
           ) {
 
-              // ===== DIRECAO DO JOGADOR =====
+              this.hspeed =
+                  (moverX / tamanho) *
+                  this.velocidade;
 
-              const dx = jogador.x - this.x;
-              const dy = jogador.y - this.y;
-
-              const distancia = Math.hypot(dx, dy);
-
-              // ===== ROTACAO DO ZUMBI =====
-
-              const angulo = u.pointDirection(
-                  this.x,
-                  this.y,
-                  jogador.x,
-                  jogador.y
-              );
-
-              // A sprite original olha para baixo
-              this.angle = angulo - 90;
-
-              // ===== PERSEGUICAO =====
-
-              if (distancia > 20) {
-                  moverX = dx / distancia;
-                  moverY = dy / distancia;
-              }
-
-              // ===== SEPARACAO ENTRE ZUMBIS =====
-
-              let separarX = 0;
-              let separarY = 0;
-
-              for (const outro of zumbis) {
-
-                  if (outro === this) {
-                      continue;
-                  }
-
-                  const ox = this.x - outro.x;
-                  const oy = this.y - outro.y;
-
-                  const d = Math.hypot(ox, oy);
-
-                  if (
-                      d > 0 &&
-                      d < this.raioDeteccao
-                  ) {
-
-                      const intensidade =
-                          (this.raioDeteccao - d) /
-                          this.raioDeteccao;
-
-                      separarX +=
-                          (ox / d) * intensidade;
-
-                      separarY +=
-                          (oy / d) * intensidade;
-                  }
-              }
-
-              // ===== COMBINAR MOVIMENTOS =====
-
-              moverX +=
-                  separarX * this.forcaSeparacao;
-
-              moverY +=
-                  separarY * this.forcaSeparacao;
-
-              const tamanho = Math.hypot(
-                  moverX,
-                  moverY
-              );
-
-              if (tamanho > 0) {
-
-                  this.hspeed =
-                      (moverX / tamanho) *
-                      this.velocidade;
-
-                  this.vspeed =
-                      (moverY / tamanho) *
-                      this.velocidade;
-
-              } else {
-
-                  this.hspeed = 0;
-                  this.vspeed = 0;
-              }
-
-              // ===== APLICAR MOVIMENTO =====
-
-              this.move();
-
-              // ===== CORRIGIR SOBREPOSICOES =====
-
-              const minimo = this.distanciaSeparacao;
-
-              for (let passo = 0; passo < 2; passo++) {
-
-                  for (const outro of zumbis) {
-
-                      if (outro === this) {
-                          continue;
-                      }
-
-                      let ox = this.x - outro.x;
-                      let oy = this.y - outro.y;
-
-                      let d = Math.hypot(ox, oy);
-
-                      if (d >= minimo) {
-                          continue;
-                      }
-
-                      if (d < 0.001) {
-
-                          const indice =
-                              zumbis.indexOf(this);
-
-                          const indiceOutro =
-                              zumbis.indexOf(outro);
-
-                          ox = indice > indiceOutro
-                              ? 1
-                              : -1;
-
-                          oy = 0;
-                          d = 1;
-                      }
-
-                      const sobreposicao =
-                          minimo - d;
-
-                      this.x +=
-                          (ox / d) * sobreposicao;
-
-                      this.y +=
-                          (oy / d) * sobreposicao;
-                  }
-              }
-
-              // ===== LIMITES DA ARENA =====
-
-              this.x = Math.max(
-                  26,
-                  Math.min(1254, this.x)
-              );
-
-              this.y = Math.max(
-                  26,
-                  Math.min(694, this.y)
-              );
-
-              // ===== ATAQUE AO JOGADOR =====
-
-              const colisao = place.meet(
-                  this,
-                  'Jogador'
-              );
-
-              if (colisao) {
-
-                  const agora = Date.now();
-
-                  if (
-                      agora - this.ultimoAtaque >=
-                      this.intervaloAtaque
-                  ) {
-
-                      jogador.vida = Math.max(
-                          0,
-                          jogador.vida - this.dano
-                      );
-                      sounds.play('som_dano', {
-              volume: 0.45
-          });
-
-                  // Faz o soldado piscar ao receber dano
-                  jogador.piscarAte =
-                      Date.now() + jogador.duracaoPiscar;
-
-                      this.ultimoAtaque = agora;
-
-                      console.log(
-                          'Jogador atingido! Vida:',
-                          jogador.vida
-                      );
-
-                      if (jogador.vida <= 0) {
-                          console.log('GAME OVER!');
-                      }
-                  }
-              }
+              this.vspeed =
+                  (moverY / tamanho) *
+                  this.velocidade;
 
           } else {
 
@@ -861,7 +1194,76 @@ assets:
               this.vspeed = 0;
           }
 
-          // ===== ATUALIZAR EFEITO DE DANO =====
+          // Mantem colisao real com os obstaculos
+          this.moveSmart('CenarioSolido');
+
+          // Limites da arena
+          this.x = Math.max(
+              26,
+              Math.min(1254, this.x)
+          );
+
+          this.y = Math.max(
+              26,
+              Math.min(694, this.y)
+          );
+
+          // ==========================================
+          // 9. ROTACAO VISUAL
+          // ==========================================
+
+          if (distanciaJogador > 0) {
+
+              // O zumbi olha para o jogador
+              const angulo = u.pointDirection(
+                  this.x,
+                  this.y,
+                  jogador.x,
+                  jogador.y
+              );
+
+              this.angle = angulo - 90;
+          }
+
+          // ==========================================
+          // 10. ATAQUE AO JOGADOR
+          // ==========================================
+
+          const colisao = place.meet(
+              this,
+              'Jogador'
+          );
+
+          if (colisao) {
+
+              const agoraAtaque = Date.now();
+
+              if (
+                  agoraAtaque - this.ultimoAtaque >=
+                  this.intervaloAtaque
+              ) {
+
+                  jogador.vida = Math.max(
+                      0,
+                      jogador.vida - this.dano
+                  );
+
+                  // Som de dano
+                  sounds.play('som_dano', {
+                      volume: 0.45
+                  });
+
+                  // Feedback visual no soldado
+                  jogador.piscarAte =
+                      Date.now() + jogador.duracaoPiscar;
+
+                  this.ultimoAtaque = agoraAtaque;
+              }
+          }
+
+          // ==========================================
+          // 11. FEEDBACK VISUAL DO ZUMBI
+          // ==========================================
 
           const agoraVisualZumbi = Date.now();
 
@@ -964,12 +1366,22 @@ assets:
 
           // Opacidade inicial
           this.alpha = 1;
+
+          // ===== NAVEGACAO PELO CENARIO =====
+
+          // Atualizacao da direcao de caminhada
+          this.destinoNavegacaoX = this.x;
+          this.destinoNavegacaoY = this.y;
+
+          // Evita que um zumbi tente se mover
+          // atraves dos obstaculos diretamente.
+          this.usandoCaminho = false;
         arguments: {}
         lib: core
     extends:
       cgroup: ''
       'editor:myCollidingCGroups': []
-    lastmod: 1794486805237
+    lastmod: 1794511083720
     uid: Wc8qB488wMpN3Q
     behaviors: []
     extendTypes: ''
@@ -989,29 +1401,35 @@ assets:
 
           /* ==========================================
              ULTIMA NOITE - PROJETIL
-             NO INICIO DO QUADRO
+             EVENTO: NO INICIO DO QUADRO
 
-             MOVIMENTO
+             MOVIMENTACAO
              COLISAO
              DANO
              MORTE ANIMADA
-             MOEDAS
+             DROP SEGURO DE MOEDAS
+             DROP SEGURO DE KIT MEDICO
              PONTUACAO
-             KIT MEDICO
           ========================================== */
 
-          // ===== PAUSA =====
+          // ==========================================
+          // 1. SISTEMA DE PAUSA
+          // ==========================================
 
           if (rooms.current.paused) {
               return;
           }
 
-          // ===== MOVIMENTACAO =====
+          // ==========================================
+          // 2. MOVIMENTACAO DO PROJETIL
+          // ==========================================
 
           this.angle = this.direction;
           this.move();
 
-          // ===== COLISAO COM ZUMBI =====
+          // ==========================================
+          // 3. COLISAO COM ZUMBI
+          // ==========================================
 
           const zumbi = place.meet(this, 'Zumbi');
 
@@ -1023,7 +1441,9 @@ assets:
               zumbi.vida > 0
           ) {
 
-              // ===== APLICAR DANO =====
+              // ======================================
+              // 4. APLICAR DANO
+              // ======================================
 
               zumbi.vida -= this.dano;
 
@@ -1037,22 +1457,25 @@ assets:
               );
 
               // ======================================
-              // MORTE DO ZUMBI
+              // 5. MORTE DO ZUMBI
               // ======================================
 
               if (zumbi.vida <= 0) {
 
-                  // Evita processar a morte novamente
+                  // Evita processar a morte duas vezes
                   zumbi.vida = 0;
                   zumbi.morrendo = true;
 
+                  // Som de morte
                   sounds.play('som_morte_zumbi', {
-              volume: 0.05
-          });
+                      volume: 0.05
+                  });
 
-                  // Inicia animacao de queda
+                  // Inicia animacao de morte
                   zumbi.tempoMorte = 0;
-                  zumbi.anguloInicialMorte = zumbi.angle;
+
+                  zumbi.anguloInicialMorte =
+                      zumbi.angle;
 
                   // Para a movimentacao
                   zumbi.hspeed = 0;
@@ -1063,11 +1486,169 @@ assets:
                   );
 
                   // ==================================
-                  // DROP DE MOEDAS
+                  // 6. BUSCAR OBSTACULOS
+                  // ==================================
+
+                  const obstaculos = (
+                      templates.list['Obstaculo'] || []
+                  ).filter(
+                      o => templates.valid(o) &&
+                           !o.kill
+                  );
+
+                  // Guarda as areas bloqueadas
+                  const areasBloqueadas = [];
+
+                  for (const obstaculo of obstaculos) {
+
+                      const area = obstaculo.getBounds();
+
+                      areasBloqueadas.push({
+                          esquerda: area.x,
+                          direita: area.x + area.width,
+                          topo: area.y,
+                          baixo: area.y + area.height
+                      });
+                  }
+
+                  // ==================================
+                  // 7. VERIFICAR POSICAO LIVRE
+                  // ==================================
+
+                  const posicaoLivre = (
+                      x,
+                      y,
+                      margem = 20
+                  ) => {
+
+                      // Limites da arena
+                      if (
+                          x < 35 ||
+                          x > 1245 ||
+                          y < 35 ||
+                          y > 685
+                      ) {
+                          return false;
+                      }
+
+                      // Verifica obstaculos
+                      for (const area of areasBloqueadas) {
+
+                          if (
+                              x >= area.esquerda - margem &&
+                              x <= area.direita + margem &&
+                              y >= area.topo - margem &&
+                              y <= area.baixo + margem
+                          ) {
+                              return false;
+                          }
+                      }
+
+                      return true;
+                  };
+
+                  // ==================================
+                  // 8. BUSCAR POSICAO SEGURA
+                  // ==================================
+
+                  const encontrarPosicaoLivre = (
+                      origemX,
+                      origemY,
+                      distanciaMinima,
+                      distanciaMaxima,
+                      margem
+                  ) => {
+
+                      // Testa posicoes aleatorias
+                      for (
+                          let tentativa = 0;
+                          tentativa < 100;
+                          tentativa++
+                      ) {
+
+                          const angulo =
+                              Math.random() *
+                              Math.PI * 2;
+
+                          const distancia =
+                              distanciaMinima +
+                              Math.random() *
+                              (
+                                  distanciaMaxima -
+                                  distanciaMinima
+                              );
+
+                          const x =
+                              origemX +
+                              Math.cos(angulo) *
+                              distancia;
+
+                          const y =
+                              origemY +
+                              Math.sin(angulo) *
+                              distancia;
+
+                          if (
+                              posicaoLivre(
+                                  x,
+                                  y,
+                                  margem
+                              )
+                          ) {
+                              return { x, y };
+                          }
+                      }
+
+                      // Procura sistematicamente caso
+                      // nenhuma tentativa aleatoria funcione
+                      for (
+                          let raio = distanciaMinima;
+                          raio <= distanciaMaxima + 100;
+                          raio += 20
+                      ) {
+
+                          for (
+                              let angulo = 0;
+                              angulo < Math.PI * 2;
+                              angulo += Math.PI / 8
+                          ) {
+
+                              const x =
+                                  origemX +
+                                  Math.cos(angulo) *
+                                  raio;
+
+                              const y =
+                                  origemY +
+                                  Math.sin(angulo) *
+                                  raio;
+
+                              if (
+                                  posicaoLivre(
+                                      x,
+                                      y,
+                                      margem
+                                  )
+                              ) {
+                                  return { x, y };
+                              }
+                          }
+                      }
+
+                      // Nenhuma posicao segura
+                      return null;
+                  };
+
+                  // ==================================
+                  // 9. DROP DE MOEDAS
                   // ==================================
 
                   const quantidadeMoedas =
-                      Math.floor(Math.random() * 3) + 1;
+                      Math.floor(
+                          Math.random() * 3
+                      ) + 1;
+
+                  let moedasCriadas = 0;
 
                   for (
                       let i = 0;
@@ -1075,40 +1656,41 @@ assets:
                       i++
                   ) {
 
-                      const angulo =
-                          Math.random() * Math.PI * 2;
+                      const posicaoMoeda =
+                          encontrarPosicaoLivre(
+                              zumbi.x,
+                              zumbi.y,
+                              35,
+                              100,
+                              15
+                          );
 
-                      const distancia =
-                          35 + Math.random() * 35;
+                      if (posicaoMoeda) {
 
-                      const x = Math.max(
-                          16,
-                          Math.min(
-                              1264,
-                              zumbi.x +
-                              Math.cos(angulo) * distancia
-                          )
-                      );
+                          templates.copy(
+                              'Moeda',
+                              posicaoMoeda.x,
+                              posicaoMoeda.y
+                          );
 
-                      const y = Math.max(
-                          16,
-                          Math.min(
-                              704,
-                              zumbi.y +
-                              Math.sin(angulo) * distancia
-                          )
-                      );
+                          moedasCriadas++;
 
-                      templates.copy('Moeda', x, y);
+                      } else {
+
+                          console.warn(
+                              'Nao foi possivel criar moeda',
+                              'em posicao livre.'
+                          );
+                      }
                   }
 
                   console.log(
                       'Moedas geradas:',
-                      quantidadeMoedas
+                      moedasCriadas
                   );
 
                   // ==================================
-                  // PONTUACAO
+                  // 10. PONTUACAO
                   // ==================================
 
                   const jogadores =
@@ -1125,27 +1707,55 @@ assets:
                   }
 
                   // ==================================
-                  // DROP DE KIT MEDICO
+                  // 11. DROP SEGURO DE KIT MEDICO
                   // ==================================
 
-                  // Mantem a chance atual de 7%
-                  const chance = Math.random();
+                  // Chance de 7%
+                  const chanceKit = 0.07;
 
-                  if (chance < 0.07) {
+                  if (
+                      Math.random() <
+                      chanceKit
+                  ) {
 
-                      templates.copy(
-                          'KitMedico',
-                          zumbi.x,
-                          zumbi.y
-                      );
+                      const posicaoKit =
+                          encontrarPosicaoLivre(
+                              zumbi.x,
+                              zumbi.y,
+                              40,
+                              150,
+                              25
+                          );
 
-                      console.log(
-                          'Kit medico apareceu!'
-                      );
+                      if (posicaoKit) {
+
+                          templates.copy(
+                              'KitMedico',
+                              posicaoKit.x,
+                              posicaoKit.y
+                          );
+
+                          console.log(
+                              'Kit medico criado em:',
+                              posicaoKit.x,
+                              posicaoKit.y
+                          );
+
+                      } else {
+
+                          console.warn(
+                              'Nenhuma posicao livre',
+                              'encontrada para o kit.'
+                          );
+                      }
                   }
-              }
 
-              // Remove o projetil apos atingir
+              } // FIM DA MORTE DO ZUMBI
+
+              // ======================================
+              // 12. REMOVER PROJETIL APOS IMPACTO
+              // ======================================
+
               this.kill = true;
 
           } else if (
@@ -1155,7 +1765,10 @@ assets:
               this.y > 760
           ) {
 
-              // Remove tiros fora da arena
+              // ======================================
+              // 13. REMOVER TIROS FORA DA ARENA
+              // ======================================
+
               this.kill = true;
           }
         arguments: {}
@@ -1169,7 +1782,7 @@ assets:
     extends:
       cgroup: ''
       'editor:myCollidingCGroups': []
-    lastmod: 1794487529655
+    lastmod: 1794513423344
     uid: bThjTDTzGtRMcm
     behaviors: []
     extendTypes: ''
@@ -2388,14 +3001,24 @@ assets:
     events:
       - eventKey: OnStep
         lib: core
-        code: |-
+        code: |
+
+          /* ==========================================
+             ULTIMA NOITE - GERENCIADOR DE ONDAS
+             EVENTO: NO INICIO DO QUADRO
+
+             - PAUSA
+             - LOJA A CADA ONDA
+             - NASCIMENTO SEGURO
+             - DIFICULDADE PROGRESSIVA
+             - FINALIZACAO DE ONDAS
+          ========================================== */
 
           if (rooms.current.paused) {
               return;
           }
-            
-          const agora = Date.now();
 
+          const agora = Date.now();
           const jogadores = templates.list['Jogador'] || [];
           const jogador = jogadores.find(j => templates.valid(j));
 
@@ -2403,23 +3026,19 @@ assets:
               return;
           }
 
-          // Apenas o gerenciador principal executa
-          const gerenciadores =
-              templates.list['GerenciadorOndas'] || [];
-
-          const principal = gerenciadores.find(
-              g => templates.valid(g)
-          );
+          // Somente o gerenciador principal executa
+          const gerenciadores = templates.list['GerenciadorOndas'] || [];
+          const principal = gerenciadores.find(g => templates.valid(g));
 
           if (principal !== this) {
               return;
           }
 
-
-          /* ===== LOJA DE MELHORIAS ===== */
+          /* ==========================================
+             1. LOJA DE MELHORIAS
+          ========================================== */
 
           if (this.estado === 'escolha') {
-
               let indice = -1;
 
               if (actions.Escolha1?.pressed) {
@@ -2430,232 +3049,287 @@ assets:
                   indice = 2;
               }
 
-              // Permite pular a loja com a tecla 0
+              // Tecla 0: pular a loja
               if (actions.PularMelhoria?.pressed) {
                   this.opcoesMelhoria = [];
                   this.estado = 'intervalo';
-                  this.proximaOndaEm =
-                      agora + this.intervaloOndas;
-
+                  this.proximaOndaEm = agora + this.intervaloOndas;
                   console.log('Loja ignorada.');
                   return;
               }
 
-              if (
-                  indice >= 0 &&
-                  indice < this.opcoesMelhoria.length
-              ) {
+              if (indice >= 0 && indice < this.opcoesMelhoria.length) {
                   const melhoria = this.opcoesMelhoria[indice];
 
-                  // Verifica saldo disponível
                   if (jogador.moedas < melhoria.preco) {
-
                       console.log(
                           'MOEDAS INSUFICIENTES!',
-                          'Necessário:', melhoria.preco,
-                          'Disponível:', jogador.moedas
+                          'Necessario:', melhoria.preco,
+                          'Disponivel:', jogador.moedas
                       );
-
                       return;
                   }
 
-                  // Aplica a melhoria
+                  // Aplica melhoria sem curar automaticamente
                   switch (melhoria.id) {
-
                       case 'dano':
                           jogador.dano += 5;
                           break;
-
                       case 'movimento':
                           jogador.velocidade += 20;
                           break;
-
                       case 'vida':
                           jogador.vidaMaxima += 20;
                           break;
-
                       case 'projetil':
                           jogador.velocidadeProjetil += 75;
                           break;
                   }
 
-                  // Desconta as moedas somente
-                  // depois de uma compra válida
                   jogador.moedas -= melhoria.preco;
 
                   console.log(
-                      'MELHORIA COMPRADA:',
-                      melhoria.nome,
-                      '| Preço:', melhoria.preco,
+                      'MELHORIA COMPRADA:', melhoria.nome,
+                      '| Preco:', melhoria.preco,
                       '| Saldo:', jogador.moedas
                   );
 
-                  // Fecha a loja
                   this.opcoesMelhoria = [];
                   this.estado = 'intervalo';
-
-                  this.proximaOndaEm =
-                      agora + this.intervaloOndas;
+                  this.proximaOndaEm = agora + this.intervaloOndas;
               }
 
               return;
           }
 
+          /* ==========================================
+             2. CONTAR ZUMBIS VIVOS
+          ========================================== */
 
-          /* ===== CONTAR ZUMBIS ===== */
+          const zumbisVivos = (templates.list['Zumbi'] || []).filter(
+              z => templates.valid(z) && !z.kill && !z.morrendo && z.vida > 0
+          );
 
-          const zumbis = templates.list['Zumbi'] || [];
+          /* ==========================================
+             3. INICIAR NOVA ONDA
+          ========================================== */
 
-          const inimigosVivos = zumbis.filter(
-              z => templates.valid(z) &&
-                   !z.kill &&
-                   z.vida > 0
-          ).length;
-
-          /* ===== INICIAR ONDA ===== */
-
-          if (
-              this.estado !== 'combate' &&
-              agora >= this.proximaOndaEm
-          ) {
+          if (this.estado !== 'combate' && agora >= this.proximaOndaEm) {
               this.onda++;
 
-              const quantidade =
-                  this.inimigosPorOnda +
-                  (this.onda - 1) * 2;
-
+              const quantidade = this.inimigosPorOnda + (this.onda - 1) * 2;
               this.estado = 'combate';
               this.observouInimigos = false;
               this.inicioOndaEm = agora;
 
-              for (let i = 0; i < quantidade; i++) {
+              /* ======================================
+                 NASCIMENTO SEGURO DOS ZUMBIS
+              ====================================== */
 
-                  const lado = Math.floor(Math.random() * 4);
+              const obstaculos = (templates.list['Obstaculo'] || []).filter(
+                  o => templates.valid(o) && !o.kill
+              );
 
-                  let x, y;
+              // Calcula os limites apenas uma vez por onda
+              const areasBloqueadas = obstaculos.map(o => {
+                  const b = o.getBounds();
+                  return {
+                      esquerda: b.x - 26,
+                      direita: b.x + b.width + 26,
+                      topo: b.y - 32,
+                      baixo: b.y + b.height + 32
+                  };
+              });
 
-                  if (lado === 0) {
-                      x = 32 + Math.random() * 1216;
-                      y = 32;
-                  } else if (lado === 1) {
-                      x = 32 + Math.random() * 1216;
-                      y = 688;
-                  } else if (lado === 2) {
-                      x = 32;
-                      y = 32 + Math.random() * 656;
-                  } else {
-                      x = 1248;
-                      y = 32 + Math.random() * 656;
+              const posicoesEscolhidas = [];
+              const distanciaMinimaJogador = 160;
+              const distanciaMinimaZumbis = 48;
+
+              const posicaoLivre = (x, y) => {
+                  // Margem de seguranca dentro da arena
+                  if (x < 52 || x > 1228 || y < 52 || y > 668) {
+                      return false;
                   }
 
-                  const zumbi = templates.copy(
-                      'Zumbi', x, y
-                  );
+                  // Nao nascer perto do jogador
+                  if (Math.hypot(x - jogador.x, y - jogador.y) < distanciaMinimaJogador) {
+                      return false;
+                  }
 
-                  // Escalonamento dos inimigos
-                  zumbi.vidaMaxima =
-                      40 + (this.onda - 1) * 10;
+                  // Nao nascer em carros, paredes ou cercas
+                  for (const a of areasBloqueadas) {
+                      if (x >= a.esquerda && x <= a.direita &&
+                          y >= a.topo && y <= a.baixo) {
+                          return false;
+                      }
+                  }
 
+                  // Nao sobrepor os zumbis sorteados nesta onda
+                  for (const p of posicoesEscolhidas) {
+                      if (Math.hypot(x - p.x, y - p.y) < distanciaMinimaZumbis) {
+                          return false;
+                      }
+                  }
+
+                  // Nao sobrepor zumbis que ja existam
+                  const existentes = templates.list['Zumbi'] || [];
+                  for (const z of existentes) {
+                      if (!templates.valid(z) || z.kill || z.morrendo || z.vida <= 0) {
+                          continue;
+                      }
+                      if (Math.hypot(x - z.x, y - z.y) < distanciaMinimaZumbis) {
+                          return false;
+                      }
+                  }
+
+                  return true;
+              };
+
+              const encontrarPosicao = () => {
+                  // Prioriza as quatro bordas
+                  for (let tentativa = 0; tentativa < 250; tentativa++) {
+                      const lado = Math.floor(Math.random() * 4);
+                      let x, y;
+
+                      
+          switch (lado) {
+
+              case 0:
+                  // Parte superior
+                  x = 100 + Math.random() * 1080;
+                  y = 100;
+                  break;
+
+              case 1:
+                  // Parte inferior
+                  x = 100 + Math.random() * 1080;
+                  y = 620;
+                  break;
+
+              case 2:
+                  // Lateral esquerda
+                  x = 100;
+                  y = 100 + Math.random() * 520;
+                  break;
+
+              default:
+                  // Lateral direita
+                  x = 1180;
+                  y = 100 + Math.random() * 520;
+                  break;
+          }
+
+
+                      if (posicaoLivre(x, y)) {
+                          return { x, y };
+                      }
+                  }
+
+                  // Plano B: procurar uma area livre dentro da arena
+                  const candidatos = [];
+                  for (let y = 52; y <= 668; y += 32) {
+                      for (let x = 52; x <= 1228; x += 32) {
+                          if (posicaoLivre(x, y)) {
+                              candidatos.push({ x, y });
+                          }
+                      }
+                  }
+
+                  if (candidatos.length > 0) {
+                      return candidatos[Math.floor(Math.random() * candidatos.length)];
+                  }
+
+                  return null;
+              };
+
+              let zumbisCriados = 0;
+
+              for (let i = 0; i < quantidade; i++) {
+                  const posicao = encontrarPosicao();
+
+                  if (!posicao) {
+                      console.warn('Sem espaco livre para zumbi', i + 1, 'da onda', this.onda);
+                      continue;
+                  }
+
+                  posicoesEscolhidas.push(posicao);
+
+                  const zumbi = templates.copy('Zumbi', posicao.x, posicao.y);
+
+                  // Escalonamento de dificuldade por onda
+                  zumbi.vidaMaxima = 40 + (this.onda - 1) * 10;
                   zumbi.vida = zumbi.vidaMaxima;
+                  zumbi.dano = 10 + (this.onda - 1) * 2;
+                  zumbi.velocidade = Math.min(90 + (this.onda - 1) * 3, 180);
 
-                  zumbi.dano =
-                      10 + (this.onda - 1) * 2;
-
-                  zumbi.velocidade = Math.min(
-                      90 + (this.onda - 1) * 3,
-                      180
-                  );
+                  zumbisCriados++;
               }
 
               console.log(
-                  'ONDA', this.onda,
-                  '| INIMIGOS:', quantidade
+                  'ONDA:', this.onda,
+                  '| SOLICITADOS:', quantidade,
+                  '| CRIADOS:', zumbisCriados
               );
+
+              // Nao deixa o jogo preso se todas as posicoes estiverem ocupadas.
+              // Tenta iniciar a mesma onda novamente apos 3 segundos.
+              if (zumbisCriados === 0) {
+                  console.warn('Nenhum zumbi criado; tentando novamente a mesma onda.');
+                  this.onda--;
+                  this.estado = 'intervalo';
+                  this.proximaOndaEm = agora + this.intervaloOndas;
+                  this.inicioOndaEm = 0;
+              }
 
               return;
           }
 
-          /* ===== FINALIZAR ONDA ===== */
+          /* ==========================================
+             4. FINALIZAR ONDA
+          ========================================== */
 
           if (this.estado === 'combate') {
-
-              if (inimigosVivos > 0) {
+              if (zumbisVivos.length > 0) {
                   this.observouInimigos = true;
               }
 
-              const tempoMinimo =
-                  agora - this.inicioOndaEm >= 300;
+              const tempoMinimo = agora - this.inicioOndaEm >= 300;
 
               if (
                   this.observouInimigos &&
                   tempoMinimo &&
-                  inimigosVivos === 0
+                  zumbisVivos.length === 0
               ) {
+                  console.log('ONDA', this.onda, 'CONCLUIDA!');
 
-                  console.log(
-                      'ONDA', this.onda, 'CONCLUIDA!'
-                  );
+                  // LOJA APOS CADA ONDA (regra atual do projeto)
+                  // Recolhe automaticamente moedas que ficaram no mapa
+                  const moedasRestantes = templates.list['Moeda'] || [];
 
-                  // A cada terceira onda
-                  
-          if (this.onda % 1 === 0) {
-
-              // Recolhe as moedas restantes do mapa
-              const moedasRestantes =
-                  templates.list['Moeda'] || [];
-
-              for (const moeda of moedasRestantes) {
-
-                  if (
-                      templates.valid(moeda) &&
-                      !moeda.kill &&
-                      !moeda.coletada
-                  ) {
-                      jogador.moedas += moeda.valor;
-
-                      moeda.coletada = true;
-                      moeda.kill = true;
-                  }
-              }
-
-              // Abre a loja após recolher as moedas
-              this.estado = 'escolha';
-          ``
-
-                      // Sorteia 3 melhorias sem repetição
-                      const disponiveis = [
-                          ...this.melhoriasDisponiveis
-                      ];
-
-                      for (let i = disponiveis.length - 1; i > 0; i--) {
-                          const j = Math.floor(
-                              Math.random() * (i + 1)
-                          );
-
-                          [
-                              disponiveis[i],
-                              disponiveis[j]
-                          ] = [
-                              disponiveis[j],
-                              disponiveis[i]
-                          ];
+                  for (const moeda of moedasRestantes) {
+                      if (
+                          templates.valid(moeda) &&
+                          !moeda.kill &&
+                          !moeda.coletada
+                      ) {
+                          jogador.moedas += moeda.valor;
+                          moeda.coletada = true;
+                          moeda.kill = true;
                       }
-
-                      this.opcoesMelhoria =
-                          disponiveis.slice(0, 3);
-
-                      console.log(
-                          'ESCOLHA UMA MELHORIA:',
-                          this.opcoesMelhoria
-                      );
-
-                  } else {
-
-                      this.estado = 'intervalo';
-
-                      this.proximaOndaEm =
-                          agora + this.intervaloOndas;
                   }
+
+                  // Sorteia tres melhorias diferentes
+                  const disponiveis = [...this.melhoriasDisponiveis];
+
+                  for (let i = disponiveis.length - 1; i > 0; i--) {
+                      const j = Math.floor(Math.random() * (i + 1));
+                      [disponiveis[i], disponiveis[j]] = [disponiveis[j], disponiveis[i]];
+                  }
+
+                  this.opcoesMelhoria = disponiveis.slice(0, 3);
+                  this.estado = 'escolha';
+
+                  console.log('ESCOLHA UMA MELHORIA:', this.opcoesMelhoria);
               }
           }
         arguments: {}
@@ -2702,7 +3376,7 @@ assets:
     extends:
       cgroup: ''
       'editor:myCollidingCGroups': []
-    lastmod: 1794488232183
+    lastmod: 1794512346708
     uid: j1P8f6c1cnnn97
     behaviors: []
     extendTypes: ''
@@ -2954,7 +3628,7 @@ assets:
         bindings: {}
     tiles: []
     extends: {}
-    lastmod: 1794509595882
+    lastmod: 1794514132518
     events: []
     behaviors: []
     extendTypes: ''
@@ -3210,7 +3884,7 @@ assets:
         bindings: {}
     tiles: []
     extends: {}
-    lastmod: 1794509595934
+    lastmod: 1794514132751
     events: []
     behaviors: []
     extendTypes: ''
@@ -3425,7 +4099,7 @@ assets:
       - x: -145
         'y': -67
     closedStrip: true
-  - lastmod: 1794486165474
+  - lastmod: 1794513933240
     type: texture
     name: Zumbi
     untill: 0
@@ -3444,11 +4118,11 @@ assets:
     offx: 0
     offy: 0
     origname: ig4J3wD789fdHjC.png
-    shape: strip
-    left: 0
-    right: 2172
-    top: 0
-    bottom: 724
+    shape: rect
+    left: 151
+    right: 168
+    top: 339
+    bottom: 264
     uid: g4J3wD789fdHjC
     padding: 1
     isBlank: false
@@ -3456,14 +4130,14 @@ assets:
     stripPoints:
       - x: 0
         'y': -360
-      - x: 187
-        'y': -210
-      - x: 180
-        'y': 308
-      - x: -163
-        'y': 309
-      - x: -170
-        'y': -219
+      - x: 127
+        'y': -245
+      - x: 113
+        'y': 268
+      - x: -149
+        'y': 265
+      - x: -180
+        'y': -338
     closedStrip: true
   - name: som_moeda
     uid: W6bKLRNtm7wr9t
@@ -3781,6 +4455,105 @@ assets:
       'editor:myCollidingCGroups': []
     lastmod: 1794508624415
     uid: t7P3933Prn472W
+    behaviors: []
+    extendTypes: ''
+  - lastmod: 1794509799874
+    type: texture
+    name: Cenário
+    untill: 0
+    grid:
+      - 1
+      - 1
+    axis:
+      - 0
+      - 0
+    marginx: 0
+    marginy: 0
+    imgWidth: 1280
+    imgHeight: 720
+    width: 1280
+    height: 720
+    offx: 0
+    offy: 0
+    origname: iQtHmT8D9bNff8D.png
+    shape: rect
+    left: 0
+    right: 1280
+    top: 0
+    bottom: 720
+    uid: QtHmT8D9bNff8D
+    padding: 1
+    isBlank: false
+    source: 'C:\Users\sett2\ct.js\Projects\UltimaNoite\UltimaNoite\img\Cenário.png'
+  - lastmod: 1794510731151
+    type: texture
+    name: tex_colisao
+    untill: 0
+    grid:
+      - 1
+      - 1
+    axis:
+      - 16
+      - 16
+    marginx: 0
+    marginy: 0
+    imgWidth: 32
+    imgHeight: 32
+    width: 32
+    height: 32
+    offx: 0
+    offy: 0
+    origname: iPd8JThdqrm5LQq.png
+    shape: rect
+    left: 16
+    right: 16
+    top: 16
+    bottom: 16
+    uid: Pd8JThdqrm5LQq
+    padding: 1
+    isBlank: false
+    source: 'C:\Users\sett2\ct.js\Projects\UltimaNoite\UltimaNoite\img\tex_colisao.png'
+    stripPoints:
+      - x: 0
+        'y': -16
+      - x: 15
+        'y': -5
+      - x: 9
+        'y': 13
+      - x: -9
+        'y': 13
+      - x: -15
+        'y': -5
+    closedStrip: true
+    r: 16
+  - type: template
+    baseClass: AnimatedSprite
+    name: Obstaculo
+    depth: 0
+    texture: Pd8JThdqrm5LQq
+    playAnimationOnStart: false
+    loopAnimation: true
+    animationFPS: 30
+    visible: true
+    events:
+      - eventKey: OnStep
+        lib: core
+        code: this.move();
+        arguments: {}
+      - eventKey: OnCreate
+        code: |
+
+          this.visible = false;
+
+          this.hspeed = 0;
+          this.vspeed = 0;
+        arguments: {}
+        lib: core
+    extends:
+      cgroup: CenarioSolido
+      'editor:myCollidingCGroups': []
+    lastmod: 1794513423228
+    uid: h961925Nwm5qNb
     behaviors: []
     extendTypes: ''
 globalVars: []
