@@ -152,21 +152,6 @@ assets:
         customSize: !<tag:yaml.org,2002:js/undefined> ''
         customWordWrap: !<tag:yaml.org,2002:js/undefined> ''
         bindings: {}
-      - x: 388.5
-        'y': 145.5
-        opacity: 0.07
-        tint: 16777215
-        scale:
-          x: 3.15625
-          'y': 2.15625
-        rotation: 0
-        uid: h961925Nwm5qNb
-        exts: {}
-        customProperties: {}
-        customText: !<tag:yaml.org,2002:js/undefined> ''
-        customSize: !<tag:yaml.org,2002:js/undefined> ''
-        customWordWrap: !<tag:yaml.org,2002:js/undefined> ''
-        bindings: {}
       - x: 641
         'y': 152
         opacity: 0.07
@@ -257,36 +242,6 @@ assets:
         customSize: !<tag:yaml.org,2002:js/undefined> ''
         customWordWrap: !<tag:yaml.org,2002:js/undefined> ''
         bindings: {}
-      - x: 358
-        'y': 533.5
-        opacity: 0.07
-        tint: 16777215
-        scale:
-          x: 1.125
-          'y': 1.59375
-        rotation: 0
-        uid: h961925Nwm5qNb
-        exts: {}
-        customProperties: {}
-        customText: !<tag:yaml.org,2002:js/undefined> ''
-        customSize: !<tag:yaml.org,2002:js/undefined> ''
-        customWordWrap: !<tag:yaml.org,2002:js/undefined> ''
-        bindings: {}
-      - x: 454
-        'y': 617.5
-        opacity: 0.07
-        tint: 16777215
-        scale:
-          x: 1.125
-          'y': 1.84375
-        rotation: 0
-        uid: h961925Nwm5qNb
-        exts: {}
-        customProperties: {}
-        customText: !<tag:yaml.org,2002:js/undefined> ''
-        customSize: !<tag:yaml.org,2002:js/undefined> ''
-        customWordWrap: !<tag:yaml.org,2002:js/undefined> ''
-        bindings: {}
       - x: 520
         'y': 668.5
         opacity: 0.07
@@ -364,7 +319,7 @@ assets:
         bindings: {}
     tiles: []
     extends: {}
-    lastmod: 1794955471828
+    lastmod: 1794955905809
     events: []
     behaviors: []
     extendTypes: ''
@@ -4587,7 +4542,7 @@ assets:
         bindings: {}
     tiles: []
     extends: {}
-    lastmod: 1794955471709
+    lastmod: 1794955905080
     events: []
     behaviors: []
     extendTypes: ''
@@ -4842,7 +4797,7 @@ assets:
         bindings: {}
     tiles: []
     extends: {}
-    lastmod: 1794955471760
+    lastmod: 1794955905464
     events: []
     behaviors: []
     extendTypes: ''
