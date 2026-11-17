@@ -364,7 +364,7 @@ assets:
         bindings: {}
     tiles: []
     extends: {}
-    lastmod: 1794598479981
+    lastmod: 1794955471828
     events: []
     behaviors: []
     extendTypes: ''
@@ -4587,7 +4587,7 @@ assets:
         bindings: {}
     tiles: []
     extends: {}
-    lastmod: 1794598479021
+    lastmod: 1794955471709
     events: []
     behaviors: []
     extendTypes: ''
@@ -4768,7 +4768,6 @@ assets:
 
               if (pagina === 'ajuda') {
                   this.conteudo.text =
-                      'COMO JOGAR\n\n' +
                       'WASD OU SETAS - MOVIMENTAR\n' +
                       'MOUSE - MIRAR\n' +
                       'CLIQUE ESQUERDO - ATIRAR\n' +
@@ -4780,13 +4779,13 @@ assets:
 
               if (pagina === 'creditos') {
                   this.conteudo.text =
-                      'CREDITOS\n\n' +
+                      '\n\nCREDITOS\n\n' +
                       'ULTIMA NOITE - 2026\n\n' +
                       'DESENVOLVIMENTO:\n' +
-                      'Bernardo Dutra Aperibense Ottoni' +
-                      'Bruno Oliveira de Souza' +
-                      'Nicolas Reis Xavier Silva' +
-                      'Alceu Vasconcellos Botelho dos Reis' +
+                      'Bernardo Dutra Aperibense Ottoni, ' +
+                      'Bruno Oliveira de Souza, ' +
+                      'Nicolas Reis Xavier Silva e ' +
+                      'Alceu Vasconcellos Botelho dos Reis \n\n' +
                       'DESENVOLVIDO COM CT.JS 5.3.1';
               }
           };
@@ -4797,7 +4796,7 @@ assets:
     extends:
       cgroup: ''
       'editor:myCollidingCGroups': []
-    lastmod: 1794437472452
+    lastmod: 1794955231348
     uid: Gh8jPp9J1L7mfq
     behaviors: []
     extendTypes: ''
@@ -4843,7 +4842,7 @@ assets:
         bindings: {}
     tiles: []
     extends: {}
-    lastmod: 1794598479066
+    lastmod: 1794955471760
     events: []
     behaviors: []
     extendTypes: ''
