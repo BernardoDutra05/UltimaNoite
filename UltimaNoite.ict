@@ -1985,7 +1985,7 @@ assets:
   - type: template
     baseClass: Text
     name: Hud
-    depth: 0
+    depth: 1000
     texture: -1
     playAnimationOnStart: false
     loopAnimation: true
@@ -2736,19 +2736,21 @@ assets:
           this.deslocamentoBarraZumbi = 43;
 
 
+
           /* ==========================================
              ULTIMA NOITE - TELA DE PAUSA
              HUD - CRIACAO
           ========================================== */
 
-          // Estado inicial
+          // ==========================================
+          // ESTADO INICIAL
+          // ==========================================
+
           rooms.current.paused = false;
 
-          // Guarda o instante em que pausou
           this.inicioPausa = 0;
-
-          // Guarda velocidades das animacoes
           this.animacoesPausadas = [];
+          this.transicaoPausaAtiva = false;
 
           // ==========================================
           // CAMADA VISUAL
@@ -2757,11 +2759,10 @@ assets:
           this.telaPausa = new PIXI.Container();
           this.addChild(this.telaPausa);
 
-          // Fundo escuro cobrindo a arena
+          // Fundo escuro
           const fundoPausa = new PIXI.Graphics();
 
-
-          fundoPausa.beginFill(0x080D17, 0.45);
+          fundoPausa.beginFill(0x080D17, 0.65);
 
           fundoPausa.drawRect(
               -this.x,
@@ -2772,7 +2773,6 @@ assets:
 
           fundoPausa.endFill();
 
-          // Bloqueia cliques na arena
           fundoPausa.eventMode = 'static';
 
           fundoPausa.hitArea = new PIXI.Rectangle(
@@ -2782,24 +2782,64 @@ assets:
               720
           );
 
-
           this.telaPausa.addChild(fundoPausa);
 
           // ==========================================
           // PAINEL CENTRAL
           // ==========================================
 
+          // Sombra
+          const sombraPausa = new PIXI.Graphics();
+
+          sombraPausa.beginFill(0x000000, 0.45);
+
+          sombraPausa.drawRoundedRect(
+              348, 153, 550, 440, 18
+          );
+
+          sombraPausa.endFill();
+
+          this.telaPausa.addChild(sombraPausa);
+
+          // Painel principal
           const painelPausa = new PIXI.Graphics();
 
           painelPausa.lineStyle(2, 0x536985);
-          painelPausa.beginFill(0x252E3D);
+          painelPausa.beginFill(0x171F2C, 0.98);
 
           painelPausa.drawRoundedRect(
               340, 145, 550, 440, 18
           );
 
           painelPausa.endFill();
+
           this.telaPausa.addChild(painelPausa);
+
+          // Faixa superior vermelha
+          const faixaPausa = new PIXI.Graphics();
+
+          faixaPausa.beginFill(0xA8323E);
+
+          faixaPausa.drawRoundedRect(
+              362, 163, 506, 5, 2
+          );
+
+          faixaPausa.endFill();
+
+          this.telaPausa.addChild(faixaPausa);
+
+          // Detalhe lateral
+          const detalhePausa = new PIXI.Graphics();
+
+          detalhePausa.beginFill(0xA8323E);
+
+          detalhePausa.drawRoundedRect(
+              340, 180, 4, 370, 2
+          );
+
+          detalhePausa.endFill();
+
+          this.telaPausa.addChild(detalhePausa);
 
           // ==========================================
           // FUNCAO PARA CRIAR TEXTOS
@@ -2827,28 +2867,39 @@ assets:
           };
 
           // ==========================================
-          // TITULO E DESCRICAO
+          // TEXTOS DA TELA DE PAUSA
           // ==========================================
 
-          criarTextoPausa(
+          this.textoProtocoloPausa = criarTextoPausa(
+              'PROTOCOLO DE SOBREVIVENCIA // PAUSADO',
+              12,
+              0xC45A63,
+              615,
+              190
+          );
+
+          this.textoTituloPausa = criarTextoPausa(
               'JOGO PAUSADO',
               42,
               0xFFFFFF,
-              615, 230
+              615,
+              230
           );
 
-          criarTextoPausa(
+          this.textoDescricaoPausa = criarTextoPausa(
               'SUA SOBREVIVENCIA ESTA EM ESPERA',
               17,
               0xB9C5D5,
-              615, 290
+              615,
+              290
           );
 
-          criarTextoPausa(
+          this.textoInstrucaoPausa = criarTextoPausa(
               'PRESSIONE P OU ESC PARA CONTINUAR',
               17,
               0xAEB9CB,
-              615, 540
+              615,
+              540
           );
 
           // ==========================================
@@ -2866,14 +2917,27 @@ assets:
 
               const fundo = new PIXI.Graphics();
 
-              fundo.beginFill(cor);
-              fundo.drawRoundedRect(
-                  0, 0, 360, 58, 10
-              );
-              fundo.endFill();
+              // Desenhar visual do botao
+              const desenharFundo = (corFundo, corBorda) => {
+
+                  fundo.clear();
+
+                  fundo.lineStyle(2, corBorda, 1);
+                  fundo.beginFill(corFundo);
+
+                  fundo.drawRoundedRect(
+                      0, 0, 360, 58, 10
+                  );
+
+                  fundo.endFill();
+              };
+
+              // Estado normal
+              desenharFundo(cor, 0x536985);
 
               botao.addChild(fundo);
 
+              // Texto
               const txt = new PIXI.Text(nome, {
                   fontFamily: 'Arial',
                   fontSize: 21,
@@ -2887,6 +2951,7 @@ assets:
 
               botao.addChild(txt);
 
+              // Interatividade
               botao.eventMode = 'static';
               botao.cursor = 'pointer';
 
@@ -2894,12 +2959,59 @@ assets:
                   0, 0, 360, 58
               );
 
+              // Mouse sobre o botao
+              botao.on('pointerover', () => {
+                  desenharFundo(0x42799B, 0xB83A46);
+                  txt.alpha = 1;
+              });
+
+              // Mouse fora do botao
+              botao.on('pointerout', () => {
+                  desenharFundo(cor, 0x536985);
+                  txt.alpha = 0.9;
+              });
+
+              // Botao pressionado
+              botao.on('pointerdown', () => {
+                  desenharFundo(0x263F55, 0xA8323E);
+                  botao.scale.set(0.98);
+              });
+
+              // Soltou o botao
+              botao.on('pointerup', () => {
+                  desenharFundo(0x42799B, 0xB83A46);
+                  botao.scale.set(1);
+              });
+
+              botao.on('pointerupoutside', () => {
+                  desenharFundo(cor, 0x536985);
+                  botao.scale.set(1);
+              });
+
+              // Mantem a acao original
               botao.on('pointertap', acao);
 
               this.telaPausa.addChild(botao);
 
               return botao;
           };
+
+          // ==========================================
+          // CRIACAO DOS BOTOES
+          // ==========================================
+
+          this.botaoContinuarPausa = criarBotaoPausa(
+              'CONTINUAR',
+              350,
+              () => this.continuarJogo()
+          );
+
+          this.botaoMenuPausa = criarBotaoPausa(
+              'MENU PRINCIPAL',
+              430,
+              () => this.voltarMenuPausa(),
+              0x354154
+          );
 
           // ==========================================
           // CONGELAR ANIMACOES
@@ -2952,30 +3064,179 @@ assets:
           };
 
           // ==========================================
+          // ANIMACAO DE ENTRADA DO MENU DE PAUSA
+          // ==========================================
+
+          this.animarEntradaPausa = () => {
+
+              const ticker = PIXI.Ticker.shared;
+
+              if (this.atualizarAnimacaoPausa) {
+                  ticker.remove(this.atualizarAnimacaoPausa);
+                  this.atualizarAnimacaoPausa = null;
+              }
+
+              // Elementos com entrada escalonada
+              const elementos = [
+                  {
+                      objeto: this.textoProtocoloPausa,
+                      atraso: 2
+                  },
+                  {
+                      objeto: this.textoTituloPausa,
+                      atraso: 3
+                  },
+                  {
+                      objeto: this.textoDescricaoPausa,
+                      atraso: 6
+                  },
+                  {
+                      objeto: this.botaoContinuarPausa,
+                      atraso: 9
+                  },
+                  {
+                      objeto: this.botaoMenuPausa,
+                      atraso: 12
+                  },
+                  {
+                      objeto: this.textoInstrucaoPausa,
+                      atraso: 15
+                  }
+              ];
+
+              // Prepara os elementos
+              for (const elemento of elementos) {
+
+                  elemento.posicaoOriginal = elemento.objeto.y;
+
+                  elemento.objeto.alpha = 0;
+
+                  elemento.objeto.y =
+                      elemento.posicaoOriginal + 15;
+              }
+
+              this.telaPausa.alpha = 0;
+              this.telaPausa.visible = true;
+
+              let progresso = 0;
+
+              this.atualizarAnimacaoPausa = (delta) => {
+
+                  progresso += delta;
+
+                  // Fade do painel
+                  this.telaPausa.alpha = Math.min(
+                      1,
+                      progresso / 15
+                  );
+
+                  // Entrada individual
+                  for (const elemento of elementos) {
+
+                      const tempoElemento =
+                          Math.max(0, progresso - elemento.atraso);
+
+                      const intensidade = Math.min(
+                          1,
+                          tempoElemento / 10
+                      );
+
+                      elemento.objeto.alpha = intensidade;
+
+                      elemento.objeto.y =
+                          elemento.posicaoOriginal +
+                          (15 * (1 - intensidade));
+                  }
+
+                  // Finaliza a animacao
+                  if (progresso >= 25) {
+
+                      this.telaPausa.alpha = 1;
+
+                      for (const elemento of elementos) {
+
+                          elemento.objeto.alpha = 1;
+
+                          elemento.objeto.y =
+                              elemento.posicaoOriginal;
+                      }
+
+                      ticker.remove(this.atualizarAnimacaoPausa);
+
+                      this.atualizarAnimacaoPausa = null;
+                  }
+              };
+
+              ticker.add(this.atualizarAnimacaoPausa);
+          };
+
+          // ==========================================
+          // ANIMACAO DE SAIDA DO MENU DE PAUSA
+          // ==========================================
+
+          this.animarSaidaPausa = (aoFinalizar) => {
+
+              const ticker = PIXI.Ticker.shared;
+
+              if (this.atualizarAnimacaoPausa) {
+                  ticker.remove(this.atualizarAnimacaoPausa);
+                  this.atualizarAnimacaoPausa = null;
+              }
+
+              let progresso = 1;
+
+              this.atualizarAnimacaoPausa = (delta) => {
+
+                  progresso -= delta / 15;
+
+                  this.telaPausa.alpha = Math.max(
+                      0,
+                      progresso
+                  );
+
+                  if (progresso <= 0) {
+
+                      ticker.remove(this.atualizarAnimacaoPausa);
+
+                      this.atualizarAnimacaoPausa = null;
+
+                      this.telaPausa.visible = false;
+                      this.telaPausa.alpha = 1;
+
+                      aoFinalizar();
+                  }
+              };
+
+              ticker.add(this.atualizarAnimacaoPausa);
+          };
+
+          // ==========================================
           // PAUSAR PARTIDA
           // ==========================================
 
           this.pausarJogo = () => {
 
-              if (rooms.current.paused) {
+              if (
+                  rooms.current.paused ||
+                  this.transicaoPausaAtiva
+              ) {
                   return;
               }
 
-          // Pausa todos os sons ativos
-          sounds.pause();
-
+              // Pausa os sons
+              sounds.pause();
 
               // Guarda o horario
               this.inicioPausa = Date.now();
 
-              // Bloqueia logica do jogo
+              // Bloqueia a logica do jogo
               rooms.current.paused = true;
 
               // Congela sprites animados
               this.congelarAnimacoes();
 
-              // Mostra tela de pausa
-              this.telaPausa.visible = true;
+              // Inicia a animacao de entrada
+              this.animarEntradaPausa();
 
               console.log('JOGO PAUSADO');
           };
@@ -2986,80 +3247,88 @@ assets:
 
           this.continuarJogo = () => {
 
-              if (!rooms.current.paused) {
+              if (
+                  !rooms.current.paused ||
+                  this.transicaoPausaAtiva
+              ) {
                   return;
               }
 
-          // Retoma os sons pausados
-          sounds.resume();
+              this.transicaoPausaAtiva = true;
 
-              // Tempo real que ficou pausado
-              const duracaoPausa =
-                  Date.now() - this.inicioPausa;
+              // Fecha o menu antes de retomar
+              this.animarSaidaPausa(() => {
 
-              // Compensa temporizadores das ondas
-              const gerenciadores =
-                  templates.list['GerenciadorOndas'] || [];
+                  // Retoma os sons
+                  sounds.resume();
 
-              for (const g of gerenciadores) {
+                  // Calcula o tempo pausado
+                  const duracaoPausa =
+                      Date.now() - this.inicioPausa;
 
-                  if (!templates.valid(g)) {
-                      continue;
+                  // Compensa temporizadores das ondas
+                  const gerenciadores =
+                      templates.list['GerenciadorOndas'] || [];
+
+                  for (const g of gerenciadores) {
+
+                      if (!templates.valid(g)) {
+                          continue;
+                      }
+
+                      if (g.proximaOndaEm) {
+                          g.proximaOndaEm += duracaoPausa;
+                      }
+
+                      if (g.inicioOndaEm) {
+                          g.inicioOndaEm += duracaoPausa;
+                      }
                   }
 
-                  if (g.proximaOndaEm) {
-                      g.proximaOndaEm += duracaoPausa;
+                  // Compensa temporizadores dos zumbis
+                  const zumbis =
+                      templates.list['Zumbi'] || [];
+
+                  for (const zumbi of zumbis) {
+
+                      if (!templates.valid(zumbi)) {
+                          continue;
+                      }
+
+                      if (zumbi.ultimoAtaque) {
+                          zumbi.ultimoAtaque += duracaoPausa;
+                      }
+
+                      if (zumbi.piscarAte) {
+                          zumbi.piscarAte += duracaoPausa;
+                      }
                   }
 
-                  if (g.inicioOndaEm) {
-                      g.inicioOndaEm += duracaoPausa;
-                  }
-              }
+                  // Compensa feedback do jogador
+                  const jogadores =
+                      templates.list['Jogador'] || [];
 
-              // Compensa temporizadores dos zumbis
-              const zumbis =
-                  templates.list['Zumbi'] || [];
+                  for (const jogador of jogadores) {
 
-              for (const zumbi of zumbis) {
+                      if (!templates.valid(jogador)) {
+                          continue;
+                      }
 
-                  if (!templates.valid(zumbi)) {
-                      continue;
-                  }
-
-                  if (zumbi.ultimoAtaque) {
-                      zumbi.ultimoAtaque += duracaoPausa;
+                      if (jogador.piscarAte) {
+                          jogador.piscarAte += duracaoPausa;
+                      }
                   }
 
-                  if (zumbi.piscarAte) {
-                      zumbi.piscarAte += duracaoPausa;
-                  }
-              }
+                  // Restaura animacoes dos personagens
+                  this.restaurarAnimacoes();
 
-              // Compensa feedback do jogador
-              const jogadores =
-                  templates.list['Jogador'] || [];
+                  // Retoma a partida
+                  rooms.current.paused = false;
 
-              for (const jogador of jogadores) {
+                  this.transicaoPausaAtiva = false;
 
-                  if (!templates.valid(jogador)) {
-                      continue;
-                  }
-
-                  if (jogador.piscarAte) {
-                      jogador.piscarAte += duracaoPausa;
-                  }
-              }
-
-              // Restaura a animacao dos personagens
-              this.restaurarAnimacoes();
-
-              // Reabilita a partida
-              rooms.current.paused = false;
-
-              // Esconde painel
-              this.telaPausa.visible = false;
-
-              console.log('JOGO RETOMADO');
+                  console.log('JOGO RETOMADO');
+              });
           };
 
           // ==========================================
@@ -3067,6 +3336,10 @@ assets:
           // ==========================================
 
           this.alternarPausa = () => {
+
+              if (this.transicaoPausaAtiva) {
+                  return;
+              }
 
               if (rooms.current.paused) {
                   this.continuarJogo();
@@ -3076,43 +3349,41 @@ assets:
           };
 
           // ==========================================
-          // VOLTAR AO MENU
+          // VOLTAR AO MENU PRINCIPAL
           // ==========================================
 
           this.voltarMenuPausa = () => {
 
-              this.restaurarAnimacoes();
+              if (
+                  !rooms.current.paused ||
+                  this.transicaoPausaAtiva
+              ) {
+                  return;
+              }
 
-              // Garante que o novo jogo nao inicie pausado
-              rooms.current.paused = false;
+              this.transicaoPausaAtiva = true;
 
-              this.telaPausa.visible = false;
+              // Fecha o menu antes de trocar de sala
+              this.animarSaidaPausa(() => {
 
-          // Interrompe sons da partida
-          sounds.stop();
+                  this.restaurarAnimacoes();
 
-              rooms.switch('rm_menu');
+                  rooms.current.paused = false;
+
+                  sounds.stop();
+
+                  this.transicaoPausaAtiva = false;
+
+                  rooms.switch('rm_menu');
+              });
           };
 
           // ==========================================
-          // BOTOES
+          // ESTADO INICIAL DA TELA
           // ==========================================
 
-          criarBotaoPausa(
-              'CONTINUAR',
-              350,
-              () => this.continuarJogo()
-          );
-
-          criarBotaoPausa(
-              'MENU PRINCIPAL',
-              430,
-              () => this.voltarMenuPausa(),
-              0x354154
-          );
-
-          // Inicia com o painel escondido
           this.telaPausa.visible = false;
+          this.telaPausa.alpha = 1;
 
           /* ==========================================
              ULTIMA NOITE - VINHETA PROGRESSIVA
@@ -3277,12 +3548,12 @@ assets:
     extends:
       cgroup: ''
       'editor:myCollidingCGroups': []
-    lastmod: 1794598320009
+    lastmod: 1794948278401
     uid: 1bqjJwgwt7pWJ3
     behaviors: []
     extendTypes: ''
-    defaultText: ''
-    textStyle: 2KWWMJk43hLqWJ
+    defaultText: 'Score: 0'
+    textStyle: -1
   - type: template
     baseClass: Text
     name: GerenciadorOndas
