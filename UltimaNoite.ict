@@ -304,7 +304,7 @@ assets:
         bindings: {}
     tiles: []
     extends: {}
-    lastmod: 1794957170144
+    lastmod: 1795017368745
     events: []
     behaviors: []
     extendTypes: ''
@@ -3506,12 +3506,13 @@ assets:
              EVENTO: NO INICIO DO QUADRO
 
              PAUSA
-             LOJA A CADA ONDA
-             SPAWN NAS RUAS
-             VERIFICACAO DE OBSTACULOS
-             AREAS ACESSIVEIS
+             LOJA APOS CADA ONDA
+             SPAWN DISTRIBUIDO
+             COLISOES E ACESSIBILIDADE
              DIFICULDADE PROGRESSIVA
-             FINALIZACAO DE ONDAS
+             FINALIZACAO DAS ONDAS
+
+             CORRECAO: FUNCAO EMBARALHAR
           ========================================== */
 
           // ==========================================
@@ -3535,7 +3536,6 @@ assets:
               return;
           }
 
-          // Somente o gerenciador principal
           const gerenciadores =
               templates.list['GerenciadorOndas'] || [];
 
@@ -3548,7 +3548,35 @@ assets:
           }
 
           // ==========================================
-          // 2. LOJA DE MELHORIAS
+          // 2. FUNCAO COMPARTILHADA DE SORTEIO
+          // ==========================================
+
+          // Declarada fora dos blocos de ondas
+          // para funcionar tambem na loja.
+
+          const embaralhar = lista => {
+
+              for (
+                  let i = lista.length - 1;
+                  i > 0;
+                  i--
+              ) {
+
+                  const j = Math.floor(
+                      Math.random() * (i + 1)
+                  );
+
+                  const temporario = lista[i];
+
+                  lista[i] = lista[j];
+                  lista[j] = temporario;
+              }
+
+              return lista;
+          };
+
+          // ==========================================
+          // 3. LOJA DE MELHORIAS
           // ==========================================
 
           if (this.estado === 'escolha') {
@@ -3557,8 +3585,10 @@ assets:
 
               if (actions.Escolha1?.pressed) {
                   indice = 0;
+
               } else if (actions.Escolha2?.pressed) {
                   indice = 1;
+
               } else if (actions.Escolha3?.pressed) {
                   indice = 2;
               }
@@ -3572,10 +3602,12 @@ assets:
                   this.proximaOndaEm =
                       agora + this.intervaloOndas;
 
-                  console.log('Loja ignorada.');
+                  console.log('Loja ignorada');
+
                   return;
               }
 
+              // Comprar melhoria
               if (
                   indice >= 0 &&
                   indice < this.opcoesMelhoria.length
@@ -3584,7 +3616,6 @@ assets:
                   const melhoria =
                       this.opcoesMelhoria[indice];
 
-                  // Verifica saldo
                   if (jogador.moedas < melhoria.preco) {
 
                       console.log(
@@ -3595,7 +3626,6 @@ assets:
                       return;
                   }
 
-                  // Aplica melhoria
                   switch (melhoria.id) {
 
                       case 'dano':
@@ -3607,7 +3637,7 @@ assets:
                           break;
 
                       case 'vida':
-                          // Nao recupera vida automaticamente
+                          // Aumenta apenas a vida maxima
                           jogador.vidaMaxima += 20;
                           break;
 
@@ -3636,7 +3666,7 @@ assets:
           }
 
           // ==========================================
-          // 3. CONTAR ZUMBIS VIVOS
+          // 4. CONTAR ZUMBIS VIVOS
           // ==========================================
 
           const zumbisVivos = (
@@ -3649,7 +3679,7 @@ assets:
           );
 
           // ==========================================
-          // 4. INICIAR NOVA ONDA
+          // 5. INICIAR NOVA ONDA
           // ==========================================
 
           if (
@@ -3664,41 +3694,63 @@ assets:
                   (proximaOnda - 1) * 2;
 
               // ======================================
-              // 5. OBSTACULOS DO CENARIO
+              // 6. OBSTACULOS DO CENARIO
               // ======================================
 
               const obstaculos = (
                   templates.list['Obstaculo'] || []
               ).filter(
-                  o => templates.valid(o) && !o.kill
+                  o => templates.valid(o) &&
+                       !o.kill
               );
 
-              // Margens de seguranca
-              const margemX = 28;
-              const margemY = 32;
+              const sala = rooms.current;
 
-              // Areas bloqueadas
-              const areas = obstaculos.map(o => {
+              // Margem de seguranca para os zumbis
+              const margem = 36;
 
-                  const b = o.getBounds();
+              const areas = obstaculos.map(
+                  obstaculo => {
 
-                  return {
-                      esquerda: b.x - margemX,
-                      direita: b.x + b.width + margemX,
-                      topo: b.y - margemY,
-                      baixo: b.y + b.height + margemY
-                  };
-              });
+                      const b = obstaculo.getBounds();
 
-              const livreDeObstaculos = (x, y) => {
+                      // Converter coordenadas para Room
+                      const p1 = sala.toLocal(
+                          new PIXI.Point(b.x, b.y)
+                      );
 
-                  for (const a of areas) {
+                      const p2 = sala.toLocal(
+                          new PIXI.Point(
+                              b.x + b.width,
+                              b.y + b.height
+                          )
+                      );
+
+                      return {
+                          esquerda:
+                              Math.min(p1.x, p2.x) - margem,
+
+                          direita:
+                              Math.max(p1.x, p2.x) + margem,
+
+                          topo:
+                              Math.min(p1.y, p2.y) - margem,
+
+                          baixo:
+                              Math.max(p1.y, p2.y) + margem
+                      };
+                  }
+              );
+
+              const foraObstaculos = (x, y) => {
+
+                  for (const area of areas) {
 
                       if (
-                          x >= a.esquerda &&
-                          x <= a.direita &&
-                          y >= a.topo &&
-                          y <= a.baixo
+                          x >= area.esquerda &&
+                          x <= area.direita &&
+                          y >= area.topo &&
+                          y <= area.baixo
                       ) {
                           return false;
                       }
@@ -3708,56 +3760,59 @@ assets:
               };
 
               // ======================================
-              // 6. GRADE DE NAVEGACAO
+              // 7. GRADE DE NAVEGACAO
               // ======================================
 
-              const celula = 32;
+              const tamanhoCelula = 32;
 
-              const cols = 40;
-              const rows = 23;
-              const total = cols * rows;
+              const colunas = 40;
+              const linhas = 23;
+
+              const total = colunas * linhas;
 
               const indiceMapa = (x, y) =>
-                  y * cols + x;
+                  y * colunas + x;
 
-              const dentro = (x, y) =>
+              const dentroMapa = (x, y) =>
                   x >= 0 &&
-                  x < cols &&
+                  x < colunas &&
                   y >= 0 &&
-                  y < rows;
+                  y < linhas;
 
               const coordX = x => Math.max(
                   0,
                   Math.min(
-                      cols - 1,
-                      Math.floor(x / celula)
+                      colunas - 1,
+                      Math.floor(x / tamanhoCelula)
                   )
               );
 
               const coordY = y => Math.max(
                   0,
                   Math.min(
-                      rows - 1,
-                      Math.floor(y / celula)
+                      linhas - 1,
+                      Math.floor(y / tamanhoCelula)
                   )
               );
 
-              // 1 = livre / 0 = bloqueado
               const livres = new Uint8Array(total);
 
-              for (let gy = 0; gy < rows; gy++) {
+              for (let gy = 0; gy < linhas; gy++) {
 
-                  for (let gx = 0; gx < cols; gx++) {
+                  for (let gx = 0; gx < colunas; gx++) {
 
-                      const x = gx * celula + 16;
-                      const y = gy * celula + 16;
+                      const x =
+                          gx * tamanhoCelula + 16;
+
+                      const y =
+                          gy * tamanhoCelula + 16;
 
                       const valido =
                           x >= 52 &&
                           x <= 1228 &&
                           y >= 52 &&
                           y <= 668 &&
-                          livreDeObstaculos(x, y);
+                          foraObstaculos(x, y);
 
                       livres[indiceMapa(gx, gy)] =
                           valido ? 1 : 0;
@@ -3765,19 +3820,15 @@ assets:
               }
 
               // ======================================
-              // 7. LOCALIZAR AREA DO JOGADOR
+              // 8. REGIAO DO JOGADOR
               // ======================================
-
-              const inicioX = coordX(jogador.x);
-              const inicioY = coordY(jogador.y);
 
               let origem = -1;
               let menorDistancia = Infinity;
 
-              // Procura celula livre mais proxima
-              for (let gy = 0; gy < rows; gy++) {
+              for (let gy = 0; gy < linhas; gy++) {
 
-                  for (let gx = 0; gx < cols; gx++) {
+                  for (let gx = 0; gx < colunas; gx++) {
 
                       const i = indiceMapa(gx, gy);
 
@@ -3785,29 +3836,37 @@ assets:
                           continue;
                       }
 
-                      const d =
-                          (gx - inicioX) ** 2 +
-                          (gy - inicioY) ** 2;
+                      const x =
+                          gx * tamanhoCelula + 16;
 
-                      if (d < menorDistancia) {
+                      const y =
+                          gy * tamanhoCelula + 16;
 
-                          menorDistancia = d;
+                      const distancia = Math.hypot(
+                          x - jogador.x,
+                          y - jogador.y
+                      );
+
+                      if (distancia < menorDistancia) {
+
+                          menorDistancia = distancia;
                           origem = i;
                       }
                   }
               }
 
               // ======================================
-              // 8. CALCULAR CELULAS ACESSIVEIS
+              // 9. AREAS ACESSIVEIS
               // ======================================
 
-              const acessiveis = new Uint8Array(total);
+              const acessiveis =
+                  new Uint8Array(total);
 
               if (origem >= 0) {
 
                   const fila = new Int32Array(total);
 
-                  let comeco = 0;
+                  let inicio = 0;
                   let fim = 0;
 
                   fila[fim++] = origem;
@@ -3820,19 +3879,22 @@ assets:
                       [0, -1]
                   ];
 
-                  while (comeco < fim) {
+                  while (inicio < fim) {
 
-                      const atual = fila[comeco++];
+                      const atual = fila[inicio++];
 
-                      const cx = atual % cols;
-                      const cy = Math.floor(atual / cols);
+                      const cx = atual % colunas;
 
-                      for (const d of direcoes) {
+                      const cy = Math.floor(
+                          atual / colunas
+                      );
 
-                          const nx = cx + d[0];
-                          const ny = cy + d[1];
+                      for (const direcao of direcoes) {
 
-                          if (!dentro(nx, ny)) {
+                          const nx = cx + direcao[0];
+                          const ny = cy + direcao[1];
+
+                          if (!dentroMapa(nx, ny)) {
                               continue;
                           }
 
@@ -3852,36 +3914,41 @@ assets:
               }
 
               // ======================================
-              // 9. VALIDAR POSICAO DE SPAWN
+              // 10. VALIDAR POSICAO DE SPAWN
               // ======================================
 
               const posicoesEscolhidas = [];
 
-              const distanciaMinimaJogador = 160;
-              const distanciaMinimaZumbis = 50;
+              const distanciaMinimaJogador = 170;
+              const distanciaMinimaZumbis = 55;
 
               const posicaoLivre = (x, y) => {
 
-                  // Margens da arena
+                  // Limites da arena
                   if (
-                      x < 52 ||
-                      x > 1228 ||
-                      y < 52 ||
-                      y > 668
+                      x < 70 ||
+                      x > 1210 ||
+                      y < 70 ||
+                      y > 650
                   ) {
                       return false;
                   }
 
-                  // Verifica obstaculos
-                  if (!livreDeObstaculos(x, y)) {
+                  // Obstaculos
+                  if (!foraObstaculos(x, y)) {
                       return false;
                   }
 
-                  // Verifica acesso ate o jogador
                   const gx = coordX(x);
                   const gy = coordY(y);
 
-                  if (!acessiveis[indiceMapa(gx, gy)]) {
+                  const i = indiceMapa(gx, gy);
+
+                  // Caminho ate a regiao do jogador
+                  if (
+                      !livres[i] ||
+                      !acessiveis[i]
+                  ) {
                       return false;
                   }
 
@@ -3895,38 +3962,38 @@ assets:
                       return false;
                   }
 
-                  // Distancia dos novos zumbis
-                  for (const p of posicoesEscolhidas) {
+                  // Distancia entre novos zumbis
+                  for (const posicao of posicoesEscolhidas) {
 
                       if (
                           Math.hypot(
-                              x - p.x,
-                              y - p.y
+                              x - posicao.x,
+                              y - posicao.y
                           ) < distanciaMinimaZumbis
                       ) {
                           return false;
                       }
                   }
 
-                  // Distancia dos zumbis existentes
+                  // Distancia de inimigos existentes
                   const existentes =
                       templates.list['Zumbi'] || [];
 
-                  for (const z of existentes) {
+                  for (const outro of existentes) {
 
                       if (
-                          !templates.valid(z) ||
-                          z.kill ||
-                          z.morrendo ||
-                          z.vida <= 0
+                          !templates.valid(outro) ||
+                          outro.kill ||
+                          outro.morrendo ||
+                          outro.vida <= 0
                       ) {
                           continue;
                       }
 
                       if (
                           Math.hypot(
-                              x - z.x,
-                              y - z.y
+                              x - outro.x,
+                              y - outro.y
                           ) < distanciaMinimaZumbis
                       ) {
                           return false;
@@ -3937,83 +4004,65 @@ assets:
               };
 
               // ======================================
-              // 10. ZONAS DE SPAWN NAS RUAS
+              // 11. ZONAS DE NASCIMENTO
               // ======================================
 
               const zonas = [
 
-                  // Rua central - parte superior
+                  // Esquerda
                   {
-                      minX: 470,
-                      maxX: 1020,
-                      minY: 285,
-                      maxY: 325
+                      nome: 'ESQUERDA',
+                      minX: 110,
+                      maxX: 420,
+                      minY: 410,
+                      maxY: 535
                   },
 
-                  // Rua central - parte inferior
+                  // Centro-esquerda
                   {
-                      minX: 470,
-                      maxX: 1000,
-                      minY: 595,
-                      maxY: 640
+                      nome: 'CENTRO_ESQUERDA',
+                      minX: 390,
+                      maxX: 590,
+                      minY: 385,
+                      maxY: 585
                   },
 
-                  // Rua central - lado esquerdo
+                  // Superior
                   {
-                      minX: 470,
-                      maxX: 530,
-                      minY: 330,
-                      maxY: 580
+                      nome: 'SUPERIOR',
+                      minX: 510,
+                      maxX: 1010,
+                      minY: 305,
+                      maxY: 375
                   },
 
-                  // Rua central - lado direito
+                  // Inferior
                   {
-                      minX: 975,
-                      maxX: 1030,
-                      minY: 330,
-                      maxY: 580
+                      nome: 'INFERIOR',
+                      minX: 650,
+                      maxX: 1080,
+                      minY: 560,
+                      maxY: 625
+                  },
+
+                  // Direita
+                  {
+                      nome: 'DIREITA',
+                      minX: 1020,
+                      maxX: 1170,
+                      minY: 350,
+                      maxY: 570
                   }
               ];
 
               // ======================================
-              // 11. ENCONTRAR POSICAO LIVRE
+              // 12. GERAR CANDIDATOS POR ZONA
               // ======================================
 
-              const encontrarPosicao = () => {
+              const candidatosPorZona = zonas.map(
+                  zona => {
 
-                  // Sorteia apenas nas ruas
-                  for (
-                      let tentativa = 0;
-                      tentativa < 400;
-                      tentativa++
-                  ) {
-
-                      const zona = zonas[
-                          Math.floor(
-                              Math.random() * zonas.length
-                          )
-                      ];
-
-                      const x =
-                          zona.minX +
-                          Math.random() *
-                          (zona.maxX - zona.minX);
-
-                      const y =
-                          zona.minY +
-                          Math.random() *
-                          (zona.maxY - zona.minY);
-
-                      if (posicaoLivre(x, y)) {
-                          return { x, y };
-                      }
-                  }
-
-                  // Plano B:
-                  // Procura somente nas zonas definidas
-                  const candidatos = [];
-
-                  for (const zona of zonas) {
+                      const candidatos = [];
 
                       for (
                           let y = zona.minY;
@@ -4028,79 +4077,129 @@ assets:
                           ) {
 
                               if (posicaoLivre(x, y)) {
-                                  candidatos.push({ x, y });
+
+                                  candidatos.push({
+                                      x,
+                                      y,
+                                      zona: zona.nome
+                                  });
                               }
                           }
                       }
+
+                      // Agora a funcao esta disponivel
+                      embaralhar(candidatos);
+
+                      return {
+                          nome: zona.nome,
+                          candidatos,
+                          indiceAtual: 0,
+                          criados: 0
+                      };
                   }
-
-                  if (candidatos.length === 0) {
-
-                      console.warn(
-                          'Nenhuma posicao segura',
-                          'nas ruas configuradas.'
-                      );
-
-                      return null;
-                  }
-
-                  return candidatos[
-                      Math.floor(
-                          Math.random() *
-                          candidatos.length
-                      )
-                  ];
-              };
+              );
 
               // ======================================
-              // 12. CRIAR ZUMBIS
+              // 13. DISTRIBUIR ZUMBIS PELAS ZONAS
               // ======================================
 
               let criados = 0;
 
-              for (
-                  let i = 0;
-                  i < quantidade;
-                  i++
+              const zonasDisponiveis =
+                  candidatosPorZona.filter(
+                      z => z.candidatos.length > 0
+                  );
+
+              // Muda a zona prioritaria a cada onda
+              const rotacao = zonasDisponiveis.length
+                  ? (proximaOnda - 1) %
+                    zonasDisponiveis.length
+                  : 0;
+
+              const ordemZonas = zonasDisponiveis.length
+                  ? [
+                      ...zonasDisponiveis.slice(rotacao),
+                      ...zonasDisponiveis.slice(0, rotacao)
+                  ]
+                  : [];
+
+              // Uma tentativa por zona a cada rodada
+              let houveProgresso = true;
+
+              while (
+                  criados < quantidade &&
+                  houveProgresso
               ) {
 
-                  const posicao = encontrarPosicao();
+                  houveProgresso = false;
 
-                  if (!posicao) {
+                  for (const zona of ordemZonas) {
 
-                      console.warn(
-                          'Sem posicao acessivel',
-                          'para zumbi da onda',
-                          proximaOnda
+                      if (criados >= quantidade) {
+                          break;
+                      }
+
+                      let posicao = null;
+
+                      while (
+                          zona.indiceAtual <
+                          zona.candidatos.length
+                      ) {
+
+                          const candidato =
+                              zona.candidatos[
+                                  zona.indiceAtual++
+                              ];
+
+                          if (
+                              posicaoLivre(
+                                  candidato.x,
+                                  candidato.y
+                              )
+                          ) {
+
+                              posicao = candidato;
+                              break;
+                          }
+                      }
+
+                      if (!posicao) {
+                          continue;
+                      }
+
+                      // Reserva a posicao
+                      posicoesEscolhidas.push(posicao);
+
+                      // Cria zumbi
+                      const zumbi = templates.copy(
+                          'Zumbi',
+                          posicao.x,
+                          posicao.y
                       );
 
-                      continue;
+                      zumbi.vidaMaxima =
+                          40 + (proximaOnda - 1) * 10;
+
+                      zumbi.vida = zumbi.vidaMaxima;
+
+                      zumbi.dano =
+                          10 + (proximaOnda - 1) * 2;
+
+                      zumbi.velocidade = Math.min(
+                          90 + (proximaOnda - 1) * 3,
+                          180
+                      );
+
+                      criados++;
+                      zona.criados++;
+
+                      houveProgresso = true;
                   }
-
-                  posicoesEscolhidas.push(posicao);
-
-                  const zumbi = templates.copy(
-                      'Zumbi',
-                      posicao.x,
-                      posicao.y
-                  );
-
-                  // Dificuldade progressiva
-                  zumbi.vidaMaxima =
-                      40 + (proximaOnda - 1) * 10;
-
-                  zumbi.vida = zumbi.vidaMaxima;
-
-                  zumbi.dano =
-                      10 + (proximaOnda - 1) * 2;
-
-                  zumbi.velocidade = Math.min(
-                      90 + (proximaOnda - 1) * 3,
-                      180
-                  );
-
-                  criados++;
               }
+
+              // ======================================
+              // 14. LOG DO SPAWN
+              // ======================================
 
               console.log(
                   'ONDA:', proximaOnda,
@@ -4108,21 +4207,31 @@ assets:
                   '| CRIADOS:', criados
               );
 
+              for (const zona of candidatosPorZona) {
+
+                  console.log(
+                      'SPAWN',
+                      zona.nome,
+                      '| CRIADOS:', zona.criados,
+                      '| CANDIDATOS:',
+                      zona.candidatos.length
+                  );
+              }
+
               // ======================================
-              // 13. ATUALIZAR ESTADO
+              // 15. ATUALIZAR ESTADO
               // ======================================
 
               if (criados === 0) {
 
-                  // Nao avanca a onda
                   this.estado = 'intervalo';
 
                   this.proximaOndaEm =
                       agora + this.intervaloOndas;
 
                   console.warn(
-                      'Nenhum zumbi criado.',
-                      'Nova tentativa em breve.'
+                      'Nenhum spawn seguro encontrado.',
+                      'Tentando novamente.'
                   );
 
               } else {
@@ -4139,7 +4248,7 @@ assets:
           }
 
           // ==========================================
-          // 14. FINALIZAR ONDA
+          // 16. FINALIZAR ONDA
           // ==========================================
 
           if (this.estado === 'combate') {
@@ -4186,36 +4295,21 @@ assets:
                   }
 
                   // ==================================
-                  // SORTEAR TRES MELHORIAS
+                  // SORTEAR MELHORIAS DA LOJA
                   // ==================================
 
                   const disponiveis = [
                       ...this.melhoriasDisponiveis
                   ];
 
-                  for (
-                      let i = disponiveis.length - 1;
-                      i > 0;
-                      i--
-                  ) {
-
-                      const j = Math.floor(
-                          Math.random() * (i + 1)
-                      );
-
-                      [
-                          disponiveis[i],
-                          disponiveis[j]
-                      ] = [
-                          disponiveis[j],
-                          disponiveis[i]
-                      ];
-                  }
+                  // CORRECAO:
+                  // Agora funciona fora do bloco de spawn
+                  embaralhar(disponiveis);
 
                   this.opcoesMelhoria =
                       disponiveis.slice(0, 3);
 
-                  // Loja apos TODA onda
+                  // Loja apos cada onda
                   this.estado = 'escolha';
 
                   console.log(
@@ -4257,7 +4351,7 @@ assets:
               },
               {
                   id: 'projetil',
-                  nome: 'PROJETIL +75',
+                  nome: 'VELOCIDADE DE PROJETIL +75',
                   preco: 15
               }
           ];
@@ -4268,7 +4362,7 @@ assets:
     extends:
       cgroup: ''
       'editor:myCollidingCGroups': []
-    lastmod: 1794598320006
+    lastmod: 1795016655561
     uid: j1P8f6c1cnnn97
     behaviors: []
     extendTypes: ''
@@ -4520,7 +4614,7 @@ assets:
         bindings: {}
     tiles: []
     extends: {}
-    lastmod: 1794957169622
+    lastmod: 1795017368425
     events: []
     behaviors: []
     extendTypes: ''
@@ -4775,7 +4869,7 @@ assets:
         bindings: {}
     tiles: []
     extends: {}
-    lastmod: 1794957169793
+    lastmod: 1795017368603
     events: []
     behaviors: []
     extendTypes: ''
@@ -4990,7 +5084,7 @@ assets:
       - x: -145
         'y': -67
     closedStrip: true
-  - lastmod: 1794956725095
+  - lastmod: 1795002723687
     type: texture
     name: Zumbi
     untill: 0
@@ -4998,8 +5092,8 @@ assets:
       - 4
       - 1
     axis:
-      - 273
-      - 330
+      - 266
+      - 325
     marginx: 0
     marginy: 0
     imgWidth: 2172
