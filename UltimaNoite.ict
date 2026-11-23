@@ -294,13 +294,13 @@ assets:
             customSize: !<tag:yaml.org,2002:js/undefined> ''
             customWordWrap: !<tag:yaml.org,2002:js/undefined> ''
             bindings: {}
-          - x: 1193
-            'y': 554
+          - x: 1187.79998779
+            'y': 558.00001717
             opacity: 0.07
             tint: 16777215
             scale:
-              x: 2.6875
-              'y': 2.0625
+              x: 2.36249924
+              'y': 1.8124989299999998
             rotation: 0
             uid: h961925Nwm5qNb
             exts: {}
@@ -356,7 +356,7 @@ assets:
             bindings: {}
         tiles: []
         extends: {}
-        lastmod: 1795398072388
+        lastmod: 1795463851831
         events:
           - eventKey: OnRoomStart
             code: |
@@ -1209,6 +1209,7 @@ assets:
               this.velocidade = 240;
               this.dano = 20;
               this.velocidadeProjetil = 500;
+              this.campoVisao = 0;
 
               this.moedas = 0;
               this.pontos = 0;
@@ -1551,9 +1552,22 @@ assets:
                   : 0;
 
               const ondaVinheta = Math.max(1, ondaAtual);
+              const nivelVisao = Math.max(
+                  0,
+                  Number(jogador.campoVisao) || 0
+              );
 
-              if (ondaVinheta !== this.ultimaOndaVinheta) {
-                  this.atualizarVinheta(ondaVinheta);
+              this.spriteVinheta.x = jogador.x - this.x;
+              this.spriteVinheta.y = jogador.y - this.y;
+
+              if (
+                  ondaVinheta !== this.ultimaOndaVinheta ||
+                  nivelVisao !== this.ultimoNivelVisao
+              ) {
+                  this.atualizarVinheta(
+                      ondaVinheta,
+                      nivelVisao
+                  );
               }
 
               this.textoVida.text =
@@ -2351,6 +2365,7 @@ assets:
               this.telaPausa.alpha = 1;
 
               this.ultimaOndaVinheta = -1;
+              this.ultimoNivelVisao = -1;
 
               this.canvasVinheta = document.createElement('canvas');
               this.canvasVinheta.width = 512;
@@ -2367,15 +2382,16 @@ assets:
                   this.texturaVinheta
               );
 
-              this.spriteVinheta.x = -this.x;
-              this.spriteVinheta.y = -this.y;
-              this.spriteVinheta.width = 1280;
-              this.spriteVinheta.height = 720;
+              this.spriteVinheta.anchor.set(0.5);
+              this.spriteVinheta.x = 640 - this.x;
+              this.spriteVinheta.y = 360 - this.y;
+              this.spriteVinheta.width = 2560;
+              this.spriteVinheta.height = 2560;
               this.spriteVinheta.eventMode = 'none';
 
               this.addChildAt(this.spriteVinheta, 0);
 
-              this.atualizarVinheta = onda => {
+              this.atualizarVinheta = (onda, nivelVisao = 0) => {
                   const ctx = this.contextoVinheta;
 
                   const numeroOnda = Math.max(
@@ -2383,47 +2399,52 @@ assets:
                       Number(onda) || 1
                   );
 
+                  const bonusVisao = Math.max(
+                      0,
+                      Number(nivelVisao) || 0
+                  );
+
                   const progresso = Math.min(
                       14,
                       numeroOnda - 1
                   );
 
-                  const centro = Math.min(
-                      0.20,
-                      0.025 + progresso * 0.012
+                  // Raio do campo de visao em pixels do canvas
+                  // (1 px no canvas = 5 px na tela)
+                  const raioInterno = Math.min(
+                      95,
+                      24 + bonusVisao * 10
                   );
 
-                  const medio = Math.min(
+                  const raioExterno = Math.min(
+                      175,
+                      56 + bonusVisao * 18
+                  );
+
+                  const borda = Math.max(
                       0.65,
-                      0.18 + progresso * 0.038
+                      Math.min(
+                          0.97,
+                          0.82 + progresso * 0.012
+                      ) - Math.min(0.15, bonusVisao * 0.02)
                   );
 
-                  const borda = Math.min(
-                      0.97,
-                      0.42 + progresso * 0.04
-                  );
+                  const medio = borda * 0.55;
 
                   ctx.clearRect(0, 0, 512, 512);
 
                   const gradiente = ctx.createRadialGradient(
-                      256, 256, 0,
-                      256, 256, 362
+                      256, 256, raioInterno,
+                      256, 256, raioExterno
                   );
 
                   gradiente.addColorStop(
                       0,
-                      `rgba(2, 4, 10, ${centro})`
+                      'rgba(2, 4, 10, 0)'
                   );
 
                   gradiente.addColorStop(
-                      0.30,
-                      `rgba(2, 4, 10, ${
-                          Math.min(0.35, centro + 0.025)
-                      })`
-                  );
-
-                  gradiente.addColorStop(
-                      0.63,
+                      0.55,
                       `rgba(2, 4, 10, ${medio})`
                   );
 
@@ -2437,9 +2458,10 @@ assets:
 
                   this.texturaVinheta.update();
                   this.ultimaOndaVinheta = numeroOnda;
+                  this.ultimoNivelVisao = bonusVisao;
               };
 
-              this.atualizarVinheta(1);
+              this.atualizarVinheta(1, 0);
 
               this.mostrarHitboxes = false;
               this.debugHitboxes = new PIXI.Graphics();
@@ -2548,6 +2570,11 @@ assets:
                               break;
                           case 'projetil':
                               jogador.velocidadeProjetil += 75;
+                              break;
+
+                          case 'visao':
+                              jogador.campoVisao =
+                                  (jogador.campoVisao || 0) + 1;
                               break;
                       }
 
@@ -2998,6 +3025,11 @@ assets:
                   {
                       id: 'projetil',
                       nome: 'VELOCIDADE DE PROJETIL +75',
+                      preco: 15
+                  },
+                  {
+                      id: 'visao',
+                      nome: 'CAMPO DE VISAO +1',
                       preco: 15
                   }
               ];
